@@ -22,7 +22,7 @@ public:
 	char id[50];
 	SOCKET socket;
 	HANDLE clientHandle;
-	HANDLE listenHandle;
+	//HANDLE listenHandle;
 
 	//thread clientThread;
 
@@ -32,7 +32,7 @@ public:
 		bIsConnected = false;
 		ZeroMemory(&id, sizeof(id));
 		clientHandle = NULL;
-		listenHandle = NULL;
+		//listenHandle = NULL;
 	}
 };
 
@@ -45,7 +45,6 @@ public:
 	GameServer();
 	~GameServer();
 
-	void Wait();
 	void Listen(int port);
 
 	static UINT WINAPI ControlThread(LPVOID p);
@@ -60,8 +59,7 @@ private:
 private:
 	int portNum;
 	SOCKET serverSocket;
-	HANDLE listenHandle;
-	HANDLE mainHandle;
+
 	bool bIsRunning;
 	SOCKET lastSocket;
 

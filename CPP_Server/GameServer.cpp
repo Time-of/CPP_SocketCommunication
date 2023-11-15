@@ -39,23 +39,15 @@ GameServer::~GameServer()
 	{
 		if (info.bIsConnected)
 		{
-			//WaitForSingleObject(info.clientHandle, INFINITE);
-			//CloseHandle(info.clientHandle);
+			WaitForSingleObject(info.clientHandle, INFINITE);
+			CloseHandle(info.clientHandle);
 			closesocket(info.socket);
 			info.bIsConnected = false;
 		}
 	}
 
-	//Wait();
-	//CloseHandle(listenHandle);
 	closesocket(serverSocket);
 	CloseSocketLayer();
-}
-
-
-void GameServer::Wait()
-{
-	//WaitForSingleObject(listenHandle, INFINITE);
 }
 
 
@@ -73,7 +65,8 @@ void GameServer::Listen(int port)
 	{
 		cout << "리슨 스레드 오류!\n";
 		return;
-	}*/
+	}
+	*/
 }
 
 
@@ -97,7 +90,6 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 
 	cout << "클라이언트 " << id << " 연결!\n";
 
-	//char messageBuffer[100];
 	int recvLen = 0;
 
 
@@ -145,7 +137,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 			{
 				//messageBuffer[recvLen] = '\0';
 
-				char clientInfoText[CVSP_STANDARD_PAYLOAD_LENGTH - sizeof(CVSPHeader) - 1] = "[";
+				char clientInfoText[CVSP_STANDARD_PAYLOAD_LENGTH - sizeof(CVSPHeader)] = "[";
 				strcat_s(clientInfoText, sizeof(clientInfoText), to_string(id).c_str());
 				strcat_s(clientInfoText, sizeof(clientInfoText), "]: ");
 				strcat_s(clientInfoText, sizeof(clientInfoText), extraPacket);

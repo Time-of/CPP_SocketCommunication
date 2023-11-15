@@ -8,6 +8,8 @@ namespace CSharp_Client
 	{
 		static unsafe void Main(string[] args)
 		{
+			System.Console.SetWindowSize(70, 20);
+
 			SocketConnector connector = new SocketConnector();
 			string messageInput;
 

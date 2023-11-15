@@ -11,6 +11,7 @@ using System.Net.Sockets;
 using System.Collections;
 using System.Net;
 
+
 namespace CVSP
 {
 	public class SocketConnector
@@ -80,9 +81,11 @@ namespace CVSP
 			
 			try
 			{
-				socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
 				IPAddress parsedIP = IPAddress.Parse(ipAddressString);
 				socket.Connect(new IPEndPoint(parsedIP, port));
+
+				// EUC-KR 인코딩을 위해 싱글톤 인스턴스 등록
+				Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 			}
 			catch (Exception e)
 			{
@@ -157,8 +160,18 @@ namespace CVSP
 		{
 			if (message.Length == 0) return 0;
 
-			byte[] payloadByte = Encoding.ASCII.GetBytes(message);
+			//byte[] payloadByte = Encoding.ASCII.GetBytes(message);
+
+			byte[] payloadByte = GetEucKrEncoding().GetBytes(message); //Encoding.GetEncoding("euc-kr").GetBytes(message);
+
 			return _InternalSendWithPayloadByte(cmd, option, payloadByte);
+		}
+
+
+		Encoding GetEucKrEncoding()
+		{
+			const int eucKrCodepage = 51949;
+			return System.Text.Encoding.GetEncoding(eucKrCodepage);
 		}
 
 
@@ -209,7 +222,7 @@ namespace CVSP
 				
 					if (header.cmd == SpecificationCVSP.CVSP_CHATTINGRES)
 					{
-						string message = Encoding.ASCII.GetString(payloadByte);
+						string message = GetEucKrEncoding().GetString(payloadByte); //Encoding.ASCII.GetString(payloadByte);
 
 						Console.WriteLine("서버: " + message);
 					}
