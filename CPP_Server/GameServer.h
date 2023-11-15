@@ -6,6 +6,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <thread>
 
 // 가장 최신 WinSock 버전
 #include <Winsock2.h>
@@ -17,11 +18,13 @@ using namespace std;
 struct ClientInfo
 {
 public:
-	SOCKET socket;
 	bool bIsConnected;
 	char id[50];
+	SOCKET socket;
 	HANDLE clientHandle;
 	HANDLE listenHandle;
+
+	//thread clientThread;
 
 	ClientInfo()
 	{
@@ -45,8 +48,8 @@ public:
 	void Wait();
 	void Listen(int port);
 
-	static UINT WINAPI ListenThread(LPVOID p);
 	static UINT WINAPI ControlThread(LPVOID p);
+	static UINT WINAPI ListenThread(LPVOID p);
 	
 
 private:
