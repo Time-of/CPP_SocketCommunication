@@ -3,6 +3,7 @@
 #pragma comment(lib, "ws2_32")
 
 #include "GameServer.h"
+#include "CVSP.h"
 
 int main(int argc, char* argv)
 {

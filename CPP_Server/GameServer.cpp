@@ -187,7 +187,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 	// CVSP
 	uint8 cmd;
 	uint8 option;
-	int len;
+
 	char extraPacket[CVSP_STANDARD_PAYLOAD_LENGTH - sizeof(CVSPHeader)];
 
 
@@ -204,9 +204,6 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 		{
 			ZeroMemory(extraPacket, sizeof(extraPacket));
 
-
-			//ZeroMemory(messageBuffer, sizeof(messageBuffer));
-			//recvLen = recv(connectSocket, messageBuffer, sizeof(messageBuffer) - 1, 0);
 			recvLen = RecvCVSP((uint32)connectSocket, &cmd, &option, extraPacket, sizeof(extraPacket));
 
 			if (recvLen == SOCKET_ERROR)
@@ -221,10 +218,11 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 				{
 					//messageBuffer[recvLen] = '\0';
 
-					char clientInfoText[CVSP_STANDARD_PAYLOAD_LENGTH - sizeof(CVSPHeader)] = "[";
+					char clientInfoText[CVSP_STANDARD_PAYLOAD_LENGTH - sizeof(CVSPHeader) - 1] = "[";
 					strcat_s(clientInfoText, sizeof(clientInfoText), to_string(id).c_str());
 					strcat_s(clientInfoText, sizeof(clientInfoText), "]: ");
 					strcat_s(clientInfoText, sizeof(clientInfoText), extraPacket);
+					clientInfoText[strlen(clientInfoText)] = '\0';
 
 					cmd = CVSP_CHATTINGRES;
 					option = CVSP_SUCCESS;
@@ -236,8 +234,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 						int clientId = 100 - (infoIter - clientArray.begin() + 1);
 						cout << clientId << "에게 메시지 전달\n";
 
-						//send(infoIter->socket, clientInfoText, strlen(clientInfoText), 0);
-						int sendResult = SendCVSP((uint32)infoIter->socket, cmd, option, clientInfoText, strlen(clientInfoText));
+						int sendResult = SendCVSP((uint32)infoIter->socket, cmd, option, clientInfoText, static_cast<uint16>(strlen(clientInfoText)));
 						if (sendResult < 0) cout << "Send 오류!\n";
 					}
 

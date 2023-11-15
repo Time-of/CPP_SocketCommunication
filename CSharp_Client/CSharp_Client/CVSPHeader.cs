@@ -15,7 +15,7 @@ namespace CVSP
 	//  전송할 수 있도록 해 주는 구조체
 	[System.Serializable]
 	[StructLayout(LayoutKind.Sequential)]
-	public unsafe struct CVSP
+	public unsafe struct CVSPHeader
 	{
 		public byte cmd;
 		public byte option;

@@ -3,7 +3,6 @@
 
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len)
 {
-	char* cvspPacket;
 	CVSPHeader cvspHeader;
 	uint32 packetSize;
 	int result;
@@ -16,7 +15,7 @@ int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len
 	cvspHeader.option = option;
 	cvspHeader.packetLength = packetSize;
 
-	cvspPacket = (char*)malloc(packetSize);
+	char* cvspPacket = (char*)malloc(packetSize);
 	assert(cvspPacket != nullptr);
 
 	ZeroMemory(cvspPacket, packetSize);

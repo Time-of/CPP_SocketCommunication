@@ -58,7 +58,7 @@ using uint32 = u_int;
 using ulong = u_long;
 
 // 4바이트 단위로 맞춰주기
-struct CVSPHeader
+struct alignas(4) CVSPHeader
 {
 	uint8 cmd;
 	uint8 option;

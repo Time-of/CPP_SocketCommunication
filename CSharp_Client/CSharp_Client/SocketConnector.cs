@@ -26,6 +26,12 @@ namespace CVSP
 
 		public unsafe object ByteToStructure(Byte[] data, Type type)
 		{
+			if (data == null)
+			{
+				Console.WriteLine("ByteToStructure: data가 유효하지 않음!!!");
+				return null;
+			}
+
 			// 언매니지드 영역에 메모리 할당 (배열 크기만큼)
 			IntPtr buffer = Marshal.AllocHGlobal(data.Length);
 			
@@ -35,7 +41,7 @@ namespace CVSP
 
 			Marshal.FreeHGlobal(buffer);
 
-			return (Marshal.SizeOf(obj) != data.Length) ? obj : null;
+			return (Marshal.SizeOf(obj) == data.Length) ? obj : null;
 		}
 
 
@@ -121,18 +127,102 @@ namespace CVSP
 
 		public int Send(byte cmd, byte option)
 		{
-			CVSP header = new CVSP();
+			CVSPHeader header = new CVSPHeader();
 			header.cmd = cmd;
 			header.option = option;
 			header.packetLength = (short)(4); // 하드코딩, CVSP 구조체의 크기.
 
+			byte[] buffer = new Byte[header.packetLength];
+			StructureToByte(header).CopyTo(buffer, 0);
+
+			return socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+		}
+
+
+		public int SendWithPayload(byte cmd, byte option, object payload)
+		{
+			byte[] payloadByte = StructureToByte(payload);
+			
+			return _InternalSendWithPayloadByte(cmd, option, payloadByte);
+		}
+
+
+		public int SendWithPayload(byte cmd, byte option, byte[] payloadByte)
+		{
+			return _InternalSendWithPayloadByte(cmd, option, payloadByte);
+		}
+
+
+		public int SendWithPayload(byte cmd, byte option, string message)
+		{
+			if (message.Length == 0) return 0;
+
+			byte[] payloadByte = Encoding.ASCII.GetBytes(message);
+			return _InternalSendWithPayloadByte(cmd, option, payloadByte);
+		}
+
+
+		// 반복되는 공통 기능 묶기.
+		private int _InternalSendWithPayloadByte(byte cmd, byte option, byte[] payloadByte)
+		{
+			CVSPHeader header = new CVSPHeader();
+			header.cmd = cmd;
+			header.option = option;
+			header.packetLength = (short)(4 + payloadByte.Length); // 하드코딩, CVSP 구조체의 크기 + payload 크기
+
 			byte[] buffer = new byte[header.packetLength];
 			StructureToByte(header).CopyTo(buffer, 0);
-			socket.Send(buffer, 0, buffer.Length, SocketFlags.None); // Send가 2회?
+			payloadByte.CopyTo(buffer, 4); // 하드코딩, 페이로드는 버퍼 다음에 붙여주기.
 
-			int result = socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+			return socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+		}
 
-			return result;
+
+		public void ReceiveThread()
+		{
+			int readBytesResult = 0;
+			byte[] headerBuffer = new Byte[4];
+			byte[] payloadByte;
+
+			CVSPHeader header = new CVSPHeader();
+
+			try
+			{
+				while (bIsConnected)
+				{
+					readBytesResult = socket.Receive(headerBuffer, 4, SocketFlags.Peek);
+
+					if (readBytesResult < 0 || readBytesResult != 4)
+					{
+						Console.WriteLine("경고: Receive 중 헤더 읽기 실패!");
+						continue;
+					} 
+
+					header = (CVSPHeader)Convert.ChangeType(ByteToStructure(headerBuffer, header.GetType()), header.GetType());
+					
+					readBytesResult = socket.Receive(readBuffer, header.packetLength, SocketFlags.None);
+					payloadByte = new byte[header.packetLength - headerBuffer.Length];
+					
+					// headerBuffer.Length는 4
+					// readBuffer에 헤더 버퍼 이후의 위치에 페이로드만 복사
+					Buffer.BlockCopy(readBuffer, headerBuffer.Length, payloadByte, 0, header.packetLength - headerBuffer.Length);
+				
+					if (header.cmd == SpecificationCVSP.CVSP_CHATTINGRES)
+					{
+						string message = Encoding.ASCII.GetString(payloadByte);
+
+						Console.WriteLine("서버: " + message);
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine("오류: 서버와 연결을 종료합니다. 메시지: " + e.Message);
+				Stop();
+
+				bIsConnected = false;
+				return;
+			}
 		}
 	}
 }
