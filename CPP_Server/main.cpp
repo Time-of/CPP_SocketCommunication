@@ -11,7 +11,7 @@ int main(int argc, char* argv)
 
 	GameServer server;
 	server.Listen(5004);
-	server.Wait();
+	//server.Wait();
 
 	return 0;
 }
