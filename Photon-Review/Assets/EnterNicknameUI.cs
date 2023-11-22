@@ -58,6 +58,7 @@ public class EnterNicknameUI : MonoBehaviour
 		//inputField.gameObject.SetActive(false);
 
 		inputNicknameButton.onClick.RemoveListener(EnterNickname);
+		GameObject.Find("Placeholder").GetComponent<TMP_Text>().SetText("채팅 입력");
 		inputNicknameButton.onClick.AddListener(EnterChat);
 
 		bWasNicknameEntered = true;
@@ -84,6 +85,8 @@ public class EnterNicknameUI : MonoBehaviour
 		{
 			return;
 		}
+
+		Debug.Log("채팅 보내기: " + inputField.text);
 
 		NetworkConnectionManager.instance.SendChat(inputField.text);
 		inputField.text = string.Empty;
