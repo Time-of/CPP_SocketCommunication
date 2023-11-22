@@ -86,6 +86,7 @@ public class EnterNicknameUI : MonoBehaviour
 			return;
 		}
 
+		inputField.text += " ";
 		Debug.Log("채팅 보내기: " + inputField.text);
 
 		NetworkConnectionManager.instance.SendChat(inputField.text);
