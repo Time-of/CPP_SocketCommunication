@@ -43838,10 +43838,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1960865767}
-  - component: {fileID: 1960865768}
   - component: {fileID: 1960865769}
+  - component: {fileID: 1960865768}
   m_Layer: 0
-  m_Name: PhotonNetwork
+  m_Name: NetworkConnector
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -43871,13 +43871,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1960865766}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 84906d028b7f14b49a4d9d44b2c3a2a2, type: 3}
+  m_Script: {fileID: 11500000, guid: a8d30b4de46d56e4aa273e2a59a70ab4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TestRoomName: HELLOWORLD
-  gameManager: {fileID: 384574961}
-  chattingBox: {fileID: 1091496803}
-  chattingBoxPanel: {fileID: 1348537866}
 --- !u!114 &1960865769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -43887,19 +43883,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1960865766}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Script: {fileID: 11500000, guid: 1671be98d5eb31f4e99c9b917f36fc09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ObservedComponentsFoldoutOpen: 1
-  Group: 0
-  prefixField: -1
-  Synchronization: 0
-  OwnershipTransfer: 0
-  observableSearch: 2
-  ObservedComponents: []
-  sceneViewId: 1
-  InstantiationId: 0
-  isRuntimeInstantiated: 0
+  TestRoomName: HELLOWORLD
+  gameManager: {fileID: 0}
+  chattingBox: {fileID: 1091496803}
+  chattingBoxPanel: {fileID: 1348537866}
 --- !u!1001 &1963992176
 PrefabInstance:
   m_ObjectHideFlags: 0

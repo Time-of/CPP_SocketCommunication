@@ -13,6 +13,8 @@ using System.Threading;
 using UnityEngine;
 using CVSP;
 
+
+[RequireComponent(typeof(NetworkConnectionManager))]
 public class SocketConnector : MonoBehaviour
 {
 	private Socket socket;

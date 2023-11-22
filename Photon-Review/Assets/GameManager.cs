@@ -1,4 +1,4 @@
-using Photon.Pun;
+//using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,7 +15,7 @@ public class GameManager : MonoBehaviour
 
 	void OnSceneLoaded(Scene loadedScene, LoadSceneMode mode)
 	{
-		if (!PhotonNetwork.IsConnected) return;
+		//if (!PhotonNetwork.IsConnected) return;
 
 		SpawnPlayer();
 	}
@@ -33,6 +33,8 @@ public class GameManager : MonoBehaviour
 	{
 		yield return new WaitForSeconds(1.0f);
 
-		PhotonNetwork.Instantiate("Player", Vector3.zero, Quaternion.identity);
+		//PhotonNetwork.Instantiate("Player", Vector3.zero, Quaternion.identity);
+
+		Instantiate(Resources.Load<GameObject>("Player"), Vector3.zero, Quaternion.identity);
 	}
 }

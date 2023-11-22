@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Photon.Pun;
+//using Photon.Pun;
 using TMPro;
 
-public class PlayerController : MonoBehaviourPun, IPunObservable
+public class PlayerController : MonoBehaviour
 {
 	private float h = 0f;
 	private float v = 0f;
@@ -47,7 +47,8 @@ public class PlayerController : MonoBehaviourPun, IPunObservable
 	{
 		animComp = GetComponent<Animator>();
 
-		if (photonView.IsMine)
+		// @todo: 내꺼에서만 작동하게 만들기
+		//if (photonView.IsMine)
 		{
 			Camera.main.GetComponent<FollowingCamera>().InitializeFollowCamera(this);
 		}
@@ -56,12 +57,12 @@ public class PlayerController : MonoBehaviourPun, IPunObservable
 
 	private void Start()
 	{
-		if (photonView.IsMine)
-			photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
+		//if (photonView.IsMine)
+			//photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
 	}
 
 
-	[PunRPC]
+	//[PunRPC]
 	private void SetMyNickname(string localNickname)
 	{
 		nickname = localNickname;
@@ -71,7 +72,8 @@ public class PlayerController : MonoBehaviourPun, IPunObservable
 
 	private void Update()
 	{
-		if (photonView.IsMine)
+		//if (photonView.IsMine)
+		if (true)
 		{
 			h = Input.GetAxis("Horizontal");
 			v = Input.GetAxis("Vertical");
@@ -98,6 +100,7 @@ public class PlayerController : MonoBehaviourPun, IPunObservable
 	}
 
 
+	/*
 	void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
 	{
 		if (stream.IsWriting)
@@ -123,10 +126,12 @@ public class PlayerController : MonoBehaviourPun, IPunObservable
 			NetworkingDistance = Vector3.Distance(transform.position, NetworkingPosition);
 		}
 	}
+	*/
 
 
 	void UpdateNetworkingTransform()
 	{
+		/*
 		if (!photonView.IsMine)
 		{
 			transform.position = Vector3.MoveTowards(transform.position, NetworkingPosition,
@@ -135,19 +140,22 @@ public class PlayerController : MonoBehaviourPun, IPunObservable
 			transform.rotation = Quaternion.Slerp(transform.rotation, NetworkingRotation,
 				NetworkingRotationInterpSpeed * Time.fixedDeltaTime);
 		}
+		*/
 	}
 
 
 	private void PerformAttack()
 	{
-		photonView.RPC("RPCPerformAttackAll", RpcTarget.All);
+		//photonView.RPC("RPCPerformAttackAll", RpcTarget.All);
 	}
 
 
-	[PunRPC]
+	//[PunRPC]
 	public void RPCPerformAttackAll()
 	{
 		animComp.SetTrigger("PerformAttack");
+
+		// @todo: 프로젝타일 수정
 		Projectile proj = Instantiate(dagger, attackPos.position, attackPos.rotation);
 		proj.owner = gameObject;
 		proj.speed = 3.0f;

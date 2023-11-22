@@ -50,6 +50,7 @@ public class EnterNicknameUI : MonoBehaviour
 
 		if (!NetworkConnectionManager.instance.ConfirmNicknameAndJoinRandomRoom(inputField.text))
 		{
+			Debug.LogError("서버와 연결 실패!");
 			return;
 		}
 
@@ -57,8 +58,8 @@ public class EnterNicknameUI : MonoBehaviour
 		//inputField.gameObject.SetActive(false);
 
 		inputNicknameButton.onClick.RemoveListener(EnterNickname);
-
 		inputNicknameButton.onClick.AddListener(EnterChat);
+
 		bWasNicknameEntered = true;
 		inputField.text = string.Empty;
 		inputField.DeactivateInputField();

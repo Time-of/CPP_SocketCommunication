@@ -1,11 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Photon.Pun;
+//using Photon.Pun;
 
 
 
-public class Projectile : MonoBehaviourPun
+public class Projectile : MonoBehaviour
 {
 	public float speed = 3.0f;
 
