@@ -7,7 +7,7 @@ using TMPro;
 
 
 
-public class PhotonManager : MonoBehaviourPunCallbacks
+public class NetworkConnectionManager : MonoBehaviourPunCallbacks
 {
 	[SerializeField]
 	private string TestRoomName = "HELLOWORLD";
@@ -17,7 +17,7 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
 	public string localNickname { get; private set; }
 
-	public static PhotonManager instance;
+	public static NetworkConnectionManager instance;
 
 	[SerializeField]
 	private TMP_Text chattingBox;

@@ -48,7 +48,7 @@ public class EnterNicknameUI : MonoBehaviour
 			return;
 		}
 
-		if (!PhotonManager.instance.ConfirmNicknameAndJoinRandomRoom(inputField.text))
+		if (!NetworkConnectionManager.instance.ConfirmNicknameAndJoinRandomRoom(inputField.text))
 		{
 			return;
 		}
@@ -84,7 +84,7 @@ public class EnterNicknameUI : MonoBehaviour
 			return;
 		}
 
-		PhotonManager.instance.SendChat(inputField.text);
+		NetworkConnectionManager.instance.SendChat(inputField.text);
 		inputField.text = string.Empty;
 	}
 }

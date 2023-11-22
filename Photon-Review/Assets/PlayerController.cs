@@ -57,7 +57,7 @@ public class PlayerController : MonoBehaviourPun, IPunObservable
 	private void Start()
 	{
 		if (photonView.IsMine)
-			photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, PhotonManager.instance.localNickname);
+			photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
 	}
 
 
