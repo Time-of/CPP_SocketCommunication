@@ -111,6 +111,15 @@ public class SocketConnector : MonoBehaviour
 	}
 
 
+	public void OnDestroy()
+	{
+		if (bIsConnected)
+		{
+			SendEndConnectionMessage();
+		}
+	}
+
+
 	public void Stop()
 	{
 		lock (socket)
