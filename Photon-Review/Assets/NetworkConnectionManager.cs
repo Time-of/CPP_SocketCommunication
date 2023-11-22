@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-
+using CVSP;
+using UnityEngine.UIElements;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(SocketConnector))]
 public class NetworkConnectionManager : MonoBehaviour
@@ -17,11 +19,17 @@ public class NetworkConnectionManager : MonoBehaviour
 
 	public static NetworkConnectionManager instance;
 
+	#region 채팅
 	[SerializeField]
 	private TMP_Text chattingBox;
 
 	[SerializeField]
-	private GameObject chattingBoxPanel;
+	private ScrollRect chattingScrollBox;
+
+	public Queue<string> chattingQueue = new();
+
+	private WaitForSeconds chattingPeekDelay = new(0.1f);
+	#endregion
 
 
 	#region 소켓 통신
@@ -35,7 +43,7 @@ public class NetworkConnectionManager : MonoBehaviour
 		socketConnector = GetComponent<SocketConnector>();
 		//PhotonNetwork.AutomaticallySyncScene = true;
 
-		chattingBoxPanel.SetActive(false);
+		chattingScrollBox.gameObject.SetActive(false);
 	}
 
 
@@ -64,8 +72,9 @@ public class NetworkConnectionManager : MonoBehaviour
 
 		// 우선은 여기서 서버에 연결하는 것으로 구현
 		bool result = socketConnector.ConnectToServer("127.0.0.1");
+		StartCoroutine(PeekChattingMessagesCoroutine());
 
-		chattingBoxPanel.SetActive(result);
+		chattingScrollBox.gameObject.SetActive(result);
 
 		return result;
 	}
@@ -101,6 +110,7 @@ public class NetworkConnectionManager : MonoBehaviour
 	}
 
 
+	#region 채팅 기능
 	public void SendChat(string message)
 	{
 		if (!socketConnector.bIsConnected)
@@ -111,13 +121,40 @@ public class NetworkConnectionManager : MonoBehaviour
 		}
 
 		string chattingText = localNickname + ": " + message + "\n";
+
 		//photonView.RPC("RPCSendChatAll", RpcTarget.All, chattingText);
+		// 서버에 보내기
+		socketConnector.SendWithPayload(SpecificationCVSP.CVSP_CHATTINGREQ, SpecificationCVSP.CVSP_SUCCESS, chattingText);
 	}
 
 
 	//[PunRPC]
-	public void RPCSendChatAll(string message)
+	public IEnumerator RPCSendChatAll(string message)
 	{
 		chattingBox.text += message;
+		yield return null;
+		chattingScrollBox.verticalNormalizedPosition = 0.0f;
 	}
+
+
+	private IEnumerator PeekChattingMessagesCoroutine()
+	{
+		Debug.Log("채팅 메시지 피킹 시작!");
+
+		while (socketConnector.bIsConnected)
+		{
+			if (chattingQueue.Count > 0)
+			{
+				string receivedMessage = chattingQueue.Dequeue();
+
+				// 기존 기능 사용, 이건 RPC는 아님??
+				StartCoroutine(RPCSendChatAll(receivedMessage));
+			}
+
+			yield return chattingPeekDelay;
+		}
+
+		Debug.Log("채팅 메시지 피킹 종료!");
+	}
+	#endregion
 }

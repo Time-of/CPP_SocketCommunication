@@ -235,6 +235,9 @@ public class SocketConnector : MonoBehaviour
 					string message = GetEucKrEncoding().GetString(payloadByte); //Encoding.ASCII.GetString(payloadByte);
 
 					Debug.Log("서버: " + message);
+
+					// 유니티에서 스레드로 UI에 직접적인 간섭 불가능하므로 이런 방식을 채택
+					NetworkConnectionManager.instance.chattingQueue.Enqueue(message);
 				}
 			}
 		}
