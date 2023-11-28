@@ -283,19 +283,39 @@ public class SocketConnector : MonoBehaviour
 				{
 					Debug.Log("서버로부터 Join 응답 도착!");
 
-					if (!bIsJoinned && header.option == SpecificationCVSP.CVSP_SUCCESS)
+					if (!bIsJoinned)
 					{
-						bIsJoinned = true;
+						if (header.option == SpecificationCVSP.CVSP_SUCCESS)
+						{
+							bIsJoinned = true;
 
-						int playerId = ByteToInt(payloadByte);
+							int playerId = ByteToInt(payloadByte);
 
-						Debug.Log("Join 상태 true, 나의 id: " + playerId);
+							Debug.Log("Join 상태 true, 나의 id: " + playerId);
 
-						NetworkConnectionManager.instance.OnJoinSuccessed(playerId);
+							NetworkConnectionManager.instance.OnJoinSuccessed(playerId);
+						}
 					}
 					else
 					{
-						Debug.Log("Join에 실패했거나, 이미 Join 상태인데 Join 응답 받았음");
+						if (header.option == SpecificationCVSP.CVSP_NEW_USER)
+						{
+							// (하드코딩) 다른 플레이어가 들어온 경우, 다른 플레이어의 캐릭터 스폰
+							int otherPlayerId = ByteToInt(payloadByte);
+
+							Debug.Log("다른 플레이어, " + otherPlayerId + " 게임에 참가함!");
+
+							NetworkConnectionManager.instance.AddObjectSpawnInfoToActionQueue(
+								"Player",
+								Vector3.zero,
+								Quaternion.identity,
+								otherPlayerId
+								);
+						}
+						else
+						{
+							Debug.Log("Join에 실패했거나, 이미 Join 상태인데 Join 응답 받았음");
+						}
 					}
 				}
 

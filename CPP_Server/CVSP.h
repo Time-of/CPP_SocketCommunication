@@ -45,6 +45,7 @@
 // ¿É¼Ç
 #define CVSP_SUCCESS 0x01
 #define CVSP_FAIL 0x02
+#define CVSP_NEW_USER 0x03
 
 
 #ifdef WIN32

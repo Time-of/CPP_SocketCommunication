@@ -209,7 +209,7 @@ public class NetworkConnectionManager : MonoBehaviour
 		Debug.Log("소켓 커넥터에 오브젝트 스폰 정보 전송 완료!");
 	}
 
-
+	
 	public void AddObjectSpawnInfoToActionQueue(string resourceName, Vector3 position, Quaternion rotation, int ownerId)
 	{
 		actionQueue.Enqueue(() => NetworkOwnership._InternalInstantiate(resourceName, position, rotation, ownerId));

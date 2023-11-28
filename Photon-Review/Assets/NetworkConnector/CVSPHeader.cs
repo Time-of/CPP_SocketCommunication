@@ -65,6 +65,7 @@ namespace CVSP
 		// 프로토콜 옵션
 		public static byte CVSP_SUCCESS = (byte)0x01;
 		public static byte CVSP_FAIL = (byte)0x02;
+		public static byte CVSP_NEW_USER = (byte)0x03;
 
 		public static int CVSP_SIZE = 4;
 		public static int CVSP_BUFFERSIZE = 4096;

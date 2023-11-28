@@ -133,6 +133,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 
 			switch (cmd)
 			{
+
 			// 채팅 요청
 			case CVSP_CHATTINGREQ:
 			{
@@ -162,18 +163,31 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 				break;
 			}
 
+
 			// Join 요청
 			case CVSP_JOINREQ:
 			{
 				cout << "클라이언트 " << id << "에서 Join 요청! 닉네임: " << extraPacket << "\n";
 
-				// int 타입으로 id 전송
+				// 요청자 본인에게 int 타입으로 id 전송
 				if (SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_SUCCESS, (int*)&id, static_cast<uint16>(sizeof(int))) < 0)
 				{
 					cout << "클라이언트 " << id << "에서 Join 요청 응답하기 위해 Send하는 데 오류 발생!\n";
 				}
+
+				// 방금 접속한 사람에게, 기존 접속자의 정보를 알려주기
+				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+				{
+					if (!infoIter->bIsConnected) continue;
+					int clientId = 100 - (infoIter - clientArray.begin() + 1);
+					if (clientId == id) continue;
+
+					int sendResult = SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_NEW_USER, (int*)&clientId, static_cast<uint16>(sizeof(int)));
+					cout << "클라이언트 " << id << "에게 " << clientId << "의 Join 정보 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
+				}
 				break;
 			}
+
 
 			// 오브젝트 스폰 요청
 			case CVSP_SPAWN_OBJECT_REQ:
@@ -184,14 +198,16 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 				// 요청자는 본인이 즉석해서 로컬에 생성하는 방식. (클라이언트 쪽)
 				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
 				{
+					if (!infoIter->bIsConnected) continue;
 					int clientId = 100 - (infoIter - clientArray.begin() + 1);
-					if (!infoIter->bIsConnected or clientId == id) continue;
+					if (clientId == id) continue;
 
 					int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_SPAWN_OBJECT_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(ObjectSpawnInfo)));
 					cout << "클라이언트 " << clientId << "에게 Spawn 요청 응답" << ((sendResult >= 0) ? " 성공!\n" : "하기 위해 Send하는 데 오류 발생!\n");
 				}
 				break;
 			}
+
 
 			// 종료 요청
 			case CVSP_LEAVEREQ:
