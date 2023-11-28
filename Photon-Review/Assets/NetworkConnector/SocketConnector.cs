@@ -303,7 +303,7 @@ public class SocketConnector : MonoBehaviour
 							// (하드코딩) 다른 플레이어가 들어온 경우, 다른 플레이어의 캐릭터 스폰
 							int otherPlayerId = ByteToInt(payloadByte);
 
-							Debug.Log("다른 플레이어, " + otherPlayerId + " 게임에 참가함!");
+							Debug.Log("다른 플레이어, " + otherPlayerId + " 가 게임에 참가함!");
 
 							NetworkConnectionManager.instance.AddObjectSpawnInfoToActionQueue(
 								"Player",
