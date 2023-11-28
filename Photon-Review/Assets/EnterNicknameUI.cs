@@ -64,6 +64,8 @@ public class EnterNicknameUI : MonoBehaviour
 		bWasNicknameEntered = true;
 		inputField.text = string.Empty;
 		inputField.DeactivateInputField();
+		inputField.gameObject.SetActive(false);
+		bInputFieldActivated = false;
 	}
 
 
@@ -73,10 +75,12 @@ public class EnterNicknameUI : MonoBehaviour
 		if (bInputFieldActivated)
 		{
 			inputField.DeactivateInputField();
+			inputField.gameObject.SetActive(false);
 			bInputFieldActivated = false;
 		}
 		else
 		{
+			inputField.gameObject.SetActive(true);
 			inputField.ActivateInputField();
 			bInputFieldActivated = true;
 		}

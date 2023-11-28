@@ -40,6 +40,8 @@ public class NetworkConnectionManager : MonoBehaviour
 	public Queue<Action> actionQueue = new();
 
 	public UnityAction OnJoinSuccessedDelegate;
+
+	public int playerId { get; private set; }
 	#endregion
 
 
@@ -55,6 +57,8 @@ public class NetworkConnectionManager : MonoBehaviour
 		//PhotonNetwork.AutomaticallySyncScene = true;
 
 		chattingScrollBox.gameObject.SetActive(false);
+
+		playerId = -1;
 	}
 
 
@@ -114,9 +118,10 @@ public class NetworkConnectionManager : MonoBehaviour
 	}
 
 
-	public void OnJoinSuccessed()
+	public void OnJoinSuccessed(int NewPlayerId)
 	{
-		Debug.Log("Join 성공.");
+		playerId = NewPlayerId;
+		Debug.Log("Join 성공. id: " + playerId);
 
 		actionQueue.Enqueue(() => OnJoinSuccessedDelegate.Invoke());
 		actionQueue.Enqueue(() => chattingScrollBox.gameObject.SetActive(true));
@@ -149,12 +154,12 @@ public class NetworkConnectionManager : MonoBehaviour
 	{
 		if (!socketConnector.bIsConnected)
 		{
-			Debug.LogWarning("서버에 연결되지 않음!!");
+			Debug.LogWarning("채팅: 서버에 연결되지 않음!!");
 			return;
 		}
 		else if (!socketConnector.bIsJoinned)
 		{
-			Debug.LogWarning("Join 되지 않았음!!");
+			Debug.LogWarning("채팅: Join 되지 않았음!!");
 			return;
 		}
 
@@ -193,6 +198,21 @@ public class NetworkConnectionManager : MonoBehaviour
 		}
 
 		Debug.Log("채팅 메시지 피킹 종료!");
+	}
+	#endregion
+
+
+	#region 오브젝트 스폰 기능
+	public void SendObjectSpawnInfo(string resourceName, Vector3 position, Quaternion rotation)
+	{
+		socketConnector.SendObjectSpawnInfo(resourceName, position, rotation, playerId);
+		Debug.Log("소켓 커넥터에 오브젝트 스폰 정보 전송 완료!");
+	}
+
+
+	public void AddObjectSpawnInfoToActionQueue(string resourceName, Vector3 position, Quaternion rotation, int ownerId)
+	{
+		actionQueue.Enqueue(() => NetworkOwnership._InternalInstantiate(resourceName, position, rotation, ownerId));
 	}
 	#endregion
 }

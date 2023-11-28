@@ -33,6 +33,8 @@ public class PlayerController : MonoBehaviour
 
 	[Header("<네트워킹>")]
 
+	private NetworkOwnership ownership;
+
 	[SerializeField]
 	protected float NetworkingRotationInterpSpeed = 25.0f;
 
@@ -46,19 +48,20 @@ public class PlayerController : MonoBehaviour
 	private void Awake()
 	{
 		animComp = GetComponent<Animator>();
-
-		// @todo: 내꺼에서만 작동하게 만들기
-		//if (photonView.IsMine)
-		{
-			Camera.main.GetComponent<FollowingCamera>().InitializeFollowCamera(this);
-		}
+		ownership = GetComponent<NetworkOwnership>();
 	}
 
 
 	private void Start()
 	{
+		if (ownership.bIsMine)
+		{
+			Camera.main.GetComponent<FollowingCamera>().InitializeFollowCamera(this);
+			SetMyNickname(NetworkConnectionManager.instance.localNickname);
+		}
+
 		//if (photonView.IsMine)
-			//photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
+		//photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
 	}
 
 
@@ -72,8 +75,7 @@ public class PlayerController : MonoBehaviour
 
 	private void Update()
 	{
-		//if (photonView.IsMine)
-		if (true)
+		if (ownership.bIsMine)
 		{
 			h = Input.GetAxis("Horizontal");
 			v = Input.GetAxis("Vertical");

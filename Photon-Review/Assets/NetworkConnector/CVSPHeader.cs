@@ -19,7 +19,28 @@ namespace CVSP
 	{
 		public byte cmd;
 		public byte option;
-		public short packetLength;
+		public ushort packetLength;
+	}
+
+
+	/// <summary>
+	/// 36바이트짜리, 오브젝트 스폰 정보.
+	/// </summary>
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct ObjectSpawnInfo
+	{
+		[MarshalAs(UnmanagedType.R4)] public float posX;
+		[MarshalAs(UnmanagedType.R4)] public float posY;
+		[MarshalAs(UnmanagedType.R4)] public float posZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatX;
+		[MarshalAs(UnmanagedType.R4)] public float quatY;
+		[MarshalAs(UnmanagedType.R4)] public float quatZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatW;
+		[MarshalAs(UnmanagedType.R4)] public int ownerId;
+
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+		public string objectName;
 	}
 
 
@@ -38,6 +59,8 @@ namespace CVSP
 		public static byte CVSP_OPERATIONREQ = (byte)0x05;
 		public static byte CVSP_MONITORINGMSG = (byte)0x06;
 		public static byte CVSP_LEAVEREQ = (byte)0x07;
+		public static byte CVSP_SPAWN_OBJECT_REQ = (byte)0x08;
+		public static byte CVSP_SPAWN_OBJECT_RES = (byte)0x09;
 
 		// 프로토콜 옵션
 		public static byte CVSP_SUCCESS = (byte)0x01;

@@ -42,16 +42,8 @@ public class GameManager : MonoBehaviour
 
 		//PhotonNetwork.Instantiate("Player", Vector3.zero, Quaternion.identity);
 
-		var playerPrefab = Resources.Load<GameObject>("Player");
-
-		if (playerPrefab == null)
-		{
-			Debug.Log("플레이어 스폰: 플레이어 프리팹 리소스 로드 실패!");
-			yield break;
-		}
-
-		var result = Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
-
+		var result = NetworkOwnership.Instantiate("Player", Vector3.zero, Quaternion.identity);
+		
 		Debug.Log("플레이어 스폰 결과: " + (result != null));
 	}
 }

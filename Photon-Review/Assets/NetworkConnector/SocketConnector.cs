@@ -49,6 +49,18 @@ public class SocketConnector : MonoBehaviour
 	}
 
 
+	public int ByteToInt(Byte[] data)
+	{
+		if (data == null)
+		{
+			Debug.Log("ByteToInt: data가 유효하지 않음!!!");
+			return -2147483648;
+		}
+
+		return BitConverter.ToInt32(data);
+	}
+
+
 	public unsafe Byte[] StructureToByte(object obj)
 	{
 		int dataSize = Marshal.SizeOf(obj);
@@ -145,7 +157,7 @@ public class SocketConnector : MonoBehaviour
 		CVSPHeader header = new CVSPHeader();
 		header.cmd = cmd;
 		header.option = option;
-		header.packetLength = (short)(4); // 하드코딩, CVSP 구조체의 크기.
+		header.packetLength = (ushort)(4); // 하드코딩, CVSP 구조체의 크기.
 
 		byte[] buffer = new Byte[header.packetLength];
 		StructureToByte(header).CopyTo(buffer, 0);
@@ -180,6 +192,27 @@ public class SocketConnector : MonoBehaviour
 	}
 
 
+	public int SendObjectSpawnInfo(string resourceName, Vector3 position, Quaternion rotation, int owner_Id)
+	{
+		Debug.Log("오브젝트 스폰 정보 취합 시작...");
+		ObjectSpawnInfo info = new()
+		{
+			posX = position.x,
+			posY = position.y,
+			posZ = position.z,
+			quatX = rotation.x,
+			quatY = rotation.y,
+			quatZ = rotation.z,
+			quatW = rotation.w,
+
+			objectName = resourceName,
+			ownerId = owner_Id
+		};
+
+		return SendWithPayload(SpecificationCVSP.CVSP_SPAWN_OBJECT_REQ, SpecificationCVSP.CVSP_SUCCESS, info);
+	}
+
+
 	Encoding GetEucKrEncoding()
 	{
 		const int eucKrCodepage = 51949;
@@ -193,7 +226,7 @@ public class SocketConnector : MonoBehaviour
 		CVSPHeader header = new CVSPHeader();
 		header.cmd = cmd;
 		header.option = option;
-		header.packetLength = (short)(4 + payloadByte.Length); // 하드코딩, CVSP 구조체의 크기 + payload 크기
+		header.packetLength = (ushort)(4 + payloadByte.Length); // 하드코딩, CVSP 구조체의 크기 + payload 크기
 
 		byte[] buffer = new byte[header.packetLength];
 		StructureToByte(header).CopyTo(buffer, 0);
@@ -243,6 +276,8 @@ public class SocketConnector : MonoBehaviour
 					// 유니티에서 스레드로 UI에 직접적인 간섭 불가능하므로 이런 방식을 채택
 					NetworkConnectionManager.instance.chattingQueue.Enqueue(message);
 				}
+
+
 				// Join 응답
 				else if (header.cmd == SpecificationCVSP.CVSP_JOINRES)
 				{
@@ -251,13 +286,41 @@ public class SocketConnector : MonoBehaviour
 					if (!bIsJoinned && header.option == SpecificationCVSP.CVSP_SUCCESS)
 					{
 						bIsJoinned = true;
-						Debug.Log("Join 상태 true");
 
-						NetworkConnectionManager.instance.OnJoinSuccessed();
+						int playerId = ByteToInt(payloadByte);
+
+						Debug.Log("Join 상태 true, 나의 id: " + playerId);
+
+						NetworkConnectionManager.instance.OnJoinSuccessed(playerId);
 					}
 					else
 					{
 						Debug.Log("Join에 실패했거나, 이미 Join 상태인데 Join 응답 받았음");
+					}
+				}
+
+
+				// 오브젝트 스폰 응답
+				else if (header.cmd == SpecificationCVSP.CVSP_SPAWN_OBJECT_RES)
+				{
+					Debug.Log("서버로부터 Object Spawn 응답 도착!");
+
+					if (header.option == SpecificationCVSP.CVSP_SUCCESS)
+					{
+						// 받은 payload를 해석
+						ObjectSpawnInfo info = new();
+						info = (ObjectSpawnInfo)Convert.ChangeType(ByteToStructure(payloadByte, info.GetType()), info.GetType());
+
+						NetworkConnectionManager.instance.AddObjectSpawnInfoToActionQueue(
+							info.objectName,
+							new Vector3(info.posX, info.posY, info.posZ),
+							new Quaternion(info.quatX, info.quatY, info.quatZ, info.quatW),
+							info.ownerId
+							);
+					}
+					else
+					{
+						Debug.LogWarning("서버로부터 도착한 Object Spawn 응답의 option이 CVSP_SUCCESS가 아님");
 					}
 				}
 			}

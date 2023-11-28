@@ -39,6 +39,8 @@
 #define CVSP_OPERATIONREQ 0x05
 #define CVSP_MONITORINGMSG 0x06
 #define CVSP_LEAVEREQ 0x07
+#define CVSP_SPAWN_OBJECT_REQ 0x08
+#define CVSP_SPAWN_OBJECT_RES 0x09
 
 // 옵션
 #define CVSP_SUCCESS 0x01
@@ -63,6 +65,21 @@ struct alignas(4) CVSPHeader
 	uint8 cmd;
 	uint8 option;
 	uint16 packetLength;
+};
+
+// 64 바이트짜리, 오브젝트 스폰 정보.
+struct ObjectSpawnInfo
+{
+	float posX;
+	float posY;
+	float posZ;
+	float quatX;
+	float quatY;
+	float quatZ;
+	float quatW;
+	int ownerId;
+
+	char objectName[32];
 };
 
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len);

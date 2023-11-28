@@ -167,13 +167,33 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 			{
 				cout << "클라이언트 " << id << "에서 Join 요청! 닉네임: " << extraPacket << "\n";
 
-				if (SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_SUCCESS, extraPacket, strlen(extraPacket)) < 0)
+				// int 타입으로 id 전송
+				if (SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_SUCCESS, (int*)&id, static_cast<uint16>(sizeof(int))) < 0)
 				{
-					cout << "클라이언트 " << id << "에서 Join 요청에 응답하기 위해 Send하는데 오류 발생!";
+					cout << "클라이언트 " << id << "에서 Join 요청 응답하기 위해 Send하는 데 오류 발생!\n";
 				}
 				break;
 			}
 
+			// 오브젝트 스폰 요청
+			case CVSP_SPAWN_OBJECT_REQ:
+			{
+				cout << "클라이언트 " << id << "에서 Object Spawn 요청!\n";
+
+				// **요청자를 제외하고** 클라이언트에 응답 뿌리기
+				// 요청자는 본인이 즉석해서 로컬에 생성하는 방식. (클라이언트 쪽)
+				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+				{
+					int clientId = 100 - (infoIter - clientArray.begin() + 1);
+					if (!infoIter->bIsConnected or clientId == id) continue;
+
+					int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_SPAWN_OBJECT_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(ObjectSpawnInfo)));
+					cout << "클라이언트 " << clientId << "에게 Spawn 요청 응답" << ((sendResult >= 0) ? " 성공!\n" : "하기 위해 Send하는 데 오류 발생!\n");
+				}
+				break;
+			}
+
+			// 종료 요청
 			case CVSP_LEAVEREQ:
 			{
 				cout << "소켓 연결을 종료합니다!\n";
