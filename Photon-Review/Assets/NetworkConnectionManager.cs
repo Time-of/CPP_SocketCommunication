@@ -5,6 +5,8 @@ using TMPro;
 using CVSP;
 using UnityEngine.UIElements;
 using UnityEngine.UI;
+using System;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(SocketConnector))]
 public class NetworkConnectionManager : MonoBehaviour
@@ -34,16 +36,31 @@ public class NetworkConnectionManager : MonoBehaviour
 
 	#region 소켓 통신
 	public SocketConnector socketConnector { get; private set; }
+
+	public Queue<Action> actionQueue = new();
+
+	public UnityAction OnJoinSuccessedDelegate;
 	#endregion
 
 
 	private void Awake()
 	{
-		if (instance == null) instance = this;
+		if (instance == null)
+		{
+			instance = this;
+			DontDestroyOnLoad(gameObject);
+		}
+
 		socketConnector = GetComponent<SocketConnector>();
 		//PhotonNetwork.AutomaticallySyncScene = true;
 
 		chattingScrollBox.gameObject.SetActive(false);
+	}
+
+
+	private void OnDestroy()
+	{
+		instance = null;
 	}
 
 
@@ -56,10 +73,19 @@ public class NetworkConnectionManager : MonoBehaviour
 	}
 
 
+	private void Update()
+	{
+		while (actionQueue.Count > 0)
+		{
+			actionQueue.Dequeue().Invoke();
+		}
+	}
+
+
 	public void OnConnectedToMaster()
 	{
 		Debug.Log("Connected to Master");
-
+		
 	}
 
 
@@ -67,25 +93,33 @@ public class NetworkConnectionManager : MonoBehaviour
 	{
 		//if (!PhotonNetwork.IsConnected) return false;
 
-		localNickname = newNickname;
 		//PhotonNetwork.JoinRandomRoom();
 
 		// 우선은 여기서 서버에 연결하는 것으로 구현
 		bool result = socketConnector.ConnectToServer("127.0.0.1");
+		if (!result) return false;
+
+		chattingScrollBox.gameObject.SetActive(false);
+
+		OnConnectedToMaster();
+
+		localNickname = newNickname;
+
 		StartCoroutine(PeekChattingMessagesCoroutine());
 
-		chattingScrollBox.gameObject.SetActive(result);
+		Debug.Log("<color=yellow>연결 성공. Join 요청 전송.</color>");
+		socketConnector.SendWithPayload(SpecificationCVSP.CVSP_JOINREQ, SpecificationCVSP.CVSP_SUCCESS, localNickname);
 
 		return result;
 	}
 
 
-	public void OnJoinedRoom()
+	public void OnJoinSuccessed()
 	{
-		//Debug.Log("<color=yellow>방 입장 성공. 방 이름:</color> " + PhotonNetwork.CurrentRoom.Name);
-		Debug.Log("<color=yellow>방 입장 성공.</color>");
+		Debug.Log("Join 성공.");
 
-		gameManager.SpawnPlayer();
+		actionQueue.Enqueue(() => OnJoinSuccessedDelegate.Invoke());
+		actionQueue.Enqueue(() => chattingScrollBox.gameObject.SetActive(true));
 	}
 
 
@@ -106,7 +140,7 @@ public class NetworkConnectionManager : MonoBehaviour
 	public void OnCreatedRoom()
 	{
 		//Debug.Log("<color=yellow>방을 생성했습니다. 방 이름:</color> " + PhotonNetwork.CurrentRoom.Name);
-		Debug.Log("<color=yellow>방을 생성했습니다.");
+		Debug.Log("<color=yellow>방을 생성했습니다.</color>");
 	}
 
 
@@ -115,8 +149,12 @@ public class NetworkConnectionManager : MonoBehaviour
 	{
 		if (!socketConnector.bIsConnected)
 		{
-			//Debug.LogWarning("playerPhotonViewRef가 null입니다!!");
-			Debug.LogWarning("통신이 연결되지 않음!!");
+			Debug.LogWarning("서버에 연결되지 않음!!");
+			return;
+		}
+		else if (!socketConnector.bIsJoinned)
+		{
+			Debug.LogWarning("Join 되지 않았음!!");
 			return;
 		}
 
@@ -147,7 +185,7 @@ public class NetworkConnectionManager : MonoBehaviour
 			{
 				string receivedMessage = chattingQueue.Dequeue();
 
-				// 기존 기능 사용, 이건 RPC는 아님??
+				// 기존 기능 사용, 이건 RPC는 아님.
 				StartCoroutine(RPCSendChatAll(receivedMessage));
 			}
 

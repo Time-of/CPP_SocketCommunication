@@ -133,6 +133,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 
 			switch (cmd)
 			{
+			// 채팅 요청
 			case CVSP_CHATTINGREQ:
 			{
 				//messageBuffer[recvLen] = '\0';
@@ -161,6 +162,18 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 				break;
 			}
 
+			// Join 요청
+			case CVSP_JOINREQ:
+			{
+				cout << "클라이언트 " << id << "에서 Join 요청! 닉네임: " << extraPacket << "\n";
+
+				if (SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_SUCCESS, extraPacket, strlen(extraPacket)) < 0)
+				{
+					cout << "클라이언트 " << id << "에서 Join 요청에 응답하기 위해 Send하는데 오류 발생!";
+				}
+				break;
+			}
+
 			case CVSP_LEAVEREQ:
 			{
 				cout << "소켓 연결을 종료합니다!\n";
@@ -174,7 +187,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 	iter->bIsConnected = false;
 	closesocket(connectSocket);
 	server->clientPools.push(iter);
-	cout << "클라이언트 " << id << " 연결 종료됨!!\n";
+	cout << "클라이언트 " << id << " 연결 종료됨!!: " << GetLastError() << "\n";
 
 	return 0;
 }

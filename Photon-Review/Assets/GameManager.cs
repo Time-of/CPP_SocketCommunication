@@ -12,6 +12,11 @@ public class GameManager : MonoBehaviour
 	}
 
 
+	private void Start()
+	{
+		NetworkConnectionManager.instance.OnJoinSuccessedDelegate += SpawnPlayer;
+	}
+
 
 	void OnSceneLoaded(Scene loadedScene, LoadSceneMode mode)
 	{
@@ -24,6 +29,7 @@ public class GameManager : MonoBehaviour
 
 	public void SpawnPlayer()
 	{
+		Debug.Log("게임 매니저에서 플레이어 스폰을 시도합니다...");
 		StartCoroutine(SpawnPlayerCoroutine());
 	}
 
@@ -31,10 +37,21 @@ public class GameManager : MonoBehaviour
 
 	private IEnumerator SpawnPlayerCoroutine()
 	{
+		Debug.Log("게임 매니저에서 플레이어 스폰 시작");
 		yield return new WaitForSeconds(1.0f);
 
 		//PhotonNetwork.Instantiate("Player", Vector3.zero, Quaternion.identity);
 
-		Instantiate(Resources.Load<GameObject>("Player"), Vector3.zero, Quaternion.identity);
+		var playerPrefab = Resources.Load<GameObject>("Player");
+
+		if (playerPrefab == null)
+		{
+			Debug.Log("플레이어 스폰: 플레이어 프리팹 리소스 로드 실패!");
+			yield break;
+		}
+
+		var result = Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+
+		Debug.Log("플레이어 스폰 결과: " + (result != null));
 	}
 }

@@ -50,7 +50,7 @@ public class EnterNicknameUI : MonoBehaviour
 
 		if (!NetworkConnectionManager.instance.ConfirmNicknameAndJoinRandomRoom(inputField.text))
 		{
-			Debug.LogError("서버와 연결 실패!");
+			Debug.LogWarning("서버와 연결 실패!");
 			return;
 		}
 

@@ -25,6 +25,8 @@ public class SocketConnector : MonoBehaviour
 
 	public bool bIsConnected { get; private set; }
 
+	public bool bIsJoinned { get; private set; }
+
 
 	public unsafe object ByteToStructure(Byte[] data, Type type)
 	{
@@ -217,7 +219,7 @@ public class SocketConnector : MonoBehaviour
 
 				if (readBytesResult < 0 || readBytesResult != 4)
 				{
-					Debug.Log("경고: Receive 중 헤더 읽기 실패!");
+					Debug.LogWarning("경고: Receive 중 헤더 읽기 실패!: " + readBytesResult);
 					continue;
 				}
 
@@ -230,6 +232,8 @@ public class SocketConnector : MonoBehaviour
 				// readBuffer에 헤더 버퍼 이후의 위치에 페이로드만 복사
 				Buffer.BlockCopy(readBuffer, headerBuffer.Length, payloadByte, 0, header.packetLength - headerBuffer.Length);
 
+
+				// 채팅 응답
 				if (header.cmd == SpecificationCVSP.CVSP_CHATTINGRES)
 				{
 					string message = GetEucKrEncoding().GetString(payloadByte); //Encoding.ASCII.GetString(payloadByte);
@@ -238,6 +242,23 @@ public class SocketConnector : MonoBehaviour
 
 					// 유니티에서 스레드로 UI에 직접적인 간섭 불가능하므로 이런 방식을 채택
 					NetworkConnectionManager.instance.chattingQueue.Enqueue(message);
+				}
+				// Join 응답
+				else if (header.cmd == SpecificationCVSP.CVSP_JOINRES)
+				{
+					Debug.Log("서버로부터 Join 응답 도착!");
+
+					if (!bIsJoinned && header.option == SpecificationCVSP.CVSP_SUCCESS)
+					{
+						bIsJoinned = true;
+						Debug.Log("Join 상태 true");
+
+						NetworkConnectionManager.instance.OnJoinSuccessed();
+					}
+					else
+					{
+						Debug.Log("Join에 실패했거나, 이미 Join 상태인데 Join 응답 받았음");
+					}
 				}
 			}
 		}
