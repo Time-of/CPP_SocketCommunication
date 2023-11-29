@@ -39,6 +39,7 @@ public class NetworkConnectionManager : MonoBehaviour
 	public SocketConnector socketConnector { get; private set; }
 
 	public Queue<Action> actionQueue = new();
+	public Queue<RPCInfo> rpcQueue = new();
 
 	public Queue<TransformInfo> transformInfoQueue = new();
 
@@ -88,6 +89,18 @@ public class NetworkConnectionManager : MonoBehaviour
 		while (actionQueue.Count > 0)
 		{
 			actionQueue.Dequeue().Invoke();
+		}
+
+		while (rpcQueue.Count > 0)
+		{
+			var info = rpcQueue.Dequeue();
+			PlayerController pc = null;
+
+			if (playerMap.TryGetValue(info.ownerId, out pc))
+			{
+				var method = pc.GetType().GetMethod(info.functionName);
+				method.Invoke(pc, new object[] { });
+			}
 		}
 
 		while (transformInfoQueue.Count > 0)
@@ -256,6 +269,16 @@ public class NetworkConnectionManager : MonoBehaviour
 	public void EnqueueTransformInfo(TransformInfo info)
 	{
 		transformInfoQueue.Enqueue(info);
+	}
+	#endregion
+
+
+	#region RPC
+	// 정석적인 방법이 아닐 수 있음 (본인이 상상으로 구현)
+	// 또한 현재는 플레이어 캐릭터에서만 적용됨
+	public void SendRPCToAll(int id, string funcName)
+	{
+		socketConnector.SendRPCToAll(id, funcName);
 	}
 	#endregion
 }

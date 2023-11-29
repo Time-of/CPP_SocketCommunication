@@ -59,6 +59,16 @@ namespace CVSP
 	};
 
 
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct RPCInfo
+	{
+		[MarshalAs(UnmanagedType.R4)] public int ownerId;
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+		public string functionName;
+	}
+
+
 // CVSP 프로토콜의 커맨드, 옵션 등 내부 플래그들을 정의하여
 //  구체화하는 클래스
 public sealed class SpecificationCVSP
@@ -76,11 +86,14 @@ public sealed class SpecificationCVSP
 		public static byte CVSP_LEAVEREQ = (byte)0x07;
 		public static byte CVSP_SPAWN_OBJECT_REQ = (byte)0x08;
 		public static byte CVSP_SPAWN_OBJECT_RES = (byte)0x09;
+		public static byte CVSP_RPC_REQ = (byte)0x10;
+		public static byte CVSP_RPC_RES = (byte)0x11;
 
 		// 프로토콜 옵션
 		public static byte CVSP_SUCCESS = (byte)0x01;
 		public static byte CVSP_FAIL = (byte)0x02;
 		public static byte CVSP_NEW_USER = (byte)0x03;
+		public static byte CVSP_RPCTARGET_ALL = (byte)0x04;
 
 		public static int CVSP_SIZE = 4;
 		public static int CVSP_BUFFERSIZE = 4096;

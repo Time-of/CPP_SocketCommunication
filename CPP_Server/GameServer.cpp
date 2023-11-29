@@ -175,8 +175,37 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 					if (clientId == id) continue;
 
 					int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_MONITORINGMSG, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(TransformInfo)));
-					cout << "TransformInfo를 " << id << " 에게서 " << clientId << " 에게 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패!\n");
+					//cout << "TransformInfo를 " << id << " 에게서 " << clientId << " 에게 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패!\n");
 				}
+				break;
+			}
+
+
+			// RPC 요청
+			case CVSP_RPC_REQ:
+			{
+
+				switch (option)
+				{
+				case CVSP_RPCTARGET_ALL:
+				{
+					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+					{
+						if (!infoIter->bIsConnected) continue;
+
+						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(RPCInfo)));
+						if (sendResult < 0) cout << "RPC 전송 실패!\n";
+					}
+					cout << "RPC 요청 모두에게 전송 완료!\n";
+					break;
+				}
+				default:
+				{
+					cout << "RPC 요청의 option이 유효하지 않음!\n";
+					break;
+				}
+				}
+
 				break;
 			}
 

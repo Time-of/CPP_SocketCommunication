@@ -41,11 +41,14 @@
 #define CVSP_LEAVEREQ 0x07
 #define CVSP_SPAWN_OBJECT_REQ 0x08
 #define CVSP_SPAWN_OBJECT_RES 0x09
+#define CVSP_RPC_REQ 0x10
+#define CVSP_RPC_RES 0x11
 
 // ¿É¼Ç
 #define CVSP_SUCCESS 0x01
 #define CVSP_FAIL 0x02
 #define CVSP_NEW_USER 0x03
+#define CVSP_RPCTARGET_ALL 0x04
 
 
 #ifdef WIN32
@@ -93,6 +96,12 @@ struct alignas(4) TransformInfo
 	float quatZ;
 	float quatW;
 	int ownerId;
+};
+
+struct RPCInfo
+{
+	int ownerId;
+	char functionName[20];
 };
 
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len);

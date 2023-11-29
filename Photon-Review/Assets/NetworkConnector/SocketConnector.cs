@@ -213,6 +213,14 @@ public class SocketConnector : MonoBehaviour
 	}
 
 
+	// 현재는 void 타입에, 파라미터 없는 경우만 지원
+	public int SendRPCToAll(int id, string funcName)
+	{
+		RPCInfo info = new() { ownerId = id, functionName = funcName };
+		return SendWithPayload(SpecificationCVSP.CVSP_RPC_REQ, SpecificationCVSP.CVSP_RPCTARGET_ALL, info);
+	}
+
+
 	Encoding GetEucKrEncoding()
 	{
 		const int eucKrCodepage = 51949;
@@ -284,6 +292,25 @@ public class SocketConnector : MonoBehaviour
 					TransformInfo info = new();
 					info = (TransformInfo)ByteToStructure(payloadByte, info.GetType());
 					NetworkConnectionManager.instance.EnqueueTransformInfo(info);
+				}
+
+
+				// RPC 응답
+				else if (header.cmd == SpecificationCVSP.CVSP_RPC_RES)
+				{
+					if (header.option == SpecificationCVSP.CVSP_SUCCESS)
+					{
+						Debug.Log("RPC 응답 성공적으로 받음!");
+
+						RPCInfo info = new();
+						info = (RPCInfo)ByteToStructure(payloadByte, info.GetType());
+
+						NetworkConnectionManager.instance.rpcQueue.Enqueue(info);
+					}
+					else
+					{
+						Debug.LogWarning("RPC 응답을 받았으나, 옵션이 성공이 아님!");
+					}
 				}
 
 

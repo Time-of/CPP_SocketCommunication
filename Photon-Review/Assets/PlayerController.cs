@@ -158,6 +158,7 @@ public class PlayerController : MonoBehaviour
 	private void PerformAttack()
 	{
 		//photonView.RPC("RPCPerformAttackAll", RpcTarget.All);
+		NetworkConnectionManager.instance.SendRPCToAll(ownership.id, "RPCPerformAttackAll");
 	}
 
 

@@ -13,7 +13,7 @@ namespace CSharp_Client
 			SocketConnector connector = new SocketConnector();
 			string messageInput;
 
-			Console.WriteLine("CVSP 헤더의 크기: " + sizeof(CVSPHeader));
+			Console.WriteLine("RPCInfo의 크기: " + sizeof(RPCInfo));
 
 			connector.ConnectToServer("127.0.0.1");
 

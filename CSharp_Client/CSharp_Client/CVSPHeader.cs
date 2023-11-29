@@ -22,6 +22,13 @@ namespace CVSP
 		public short packetLength;
 	}
 
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct RPCInfo
+	{
+		Action functionPointer;
+	}
+
 
 	// CVSP 프로토콜의 커맨드, 옵션 등 내부 플래그들을 정의하여
 	//  구체화하는 클래스
