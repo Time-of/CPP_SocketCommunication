@@ -12,7 +12,8 @@ using System.Net;
 using System.Threading;
 using UnityEngine;
 using CVSP;
-
+using System.Security.Cryptography;
+using Unity.Assertions;
 
 [RequireComponent(typeof(NetworkConnectionManager))]
 public class SocketConnector : MonoBehaviour
@@ -216,8 +217,24 @@ public class SocketConnector : MonoBehaviour
 	// 현재는 void 타입에, 파라미터 없는 경우만 지원
 	public int SendRPCToAll(int id, string funcName)
 	{
-		RPCInfo info = new() { ownerId = id, functionName = funcName };
-		return SendWithPayload(SpecificationCVSP.CVSP_RPC_REQ, SpecificationCVSP.CVSP_RPCTARGET_ALL, info);
+		RPCInfoNoParam info = new() { ownerId = id, functionName = funcName };
+		return SendWithPayload(SpecificationCVSP.CVSP_RPC_NOPARAM_REQ, SpecificationCVSP.CVSP_RPCTARGET_ALL, info);
+	}
+
+
+	// 파라미터 기능 추가 시도...
+	public int SendRPCToAll(int id, string funcName, params object[] parameters)
+	{
+		if (parameters.Length > 0)
+		{
+			var params_types = SerializeObjects(parameters);
+			RPCInfo info = new() { ownerId = id, functionName = funcName, rpcParams = params_types.Item1, rpcParamTypes = params_types.Item2 };
+			return SendWithPayload(SpecificationCVSP.CVSP_RPC_REQ, SpecificationCVSP.CVSP_RPCTARGET_ALL, info);
+		}
+		else
+		{
+			return SendRPCToAll(id, funcName);
+		}
 	}
 
 
@@ -241,6 +258,192 @@ public class SocketConnector : MonoBehaviour
 		payloadByte.CopyTo(buffer, 4); // 하드코딩, 페이로드는 버퍼 다음에 붙여주기.
 
 		return socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+	}
+
+
+	public (byte[], byte[]) SerializeObjects(params object[] parameters)
+	{
+		if (parameters == null
+			|| parameters.Length == 0)
+		{
+			Debug.Log("직렬화할 파라미터들이 아무것도 없음!");
+			return (null, null);
+		}
+
+		int byteSize = 0;
+
+		List<KeyValuePair<byte[], ushort>> bytesList = new();
+		byte[] types = new byte[8];
+
+		// 네트워크 전송/받은 후 역직렬화 시 쓰레기 값 탐지 용도
+		if (parameters.Length < 8)
+		{
+			types[parameters.Length] = RPCValueType.UNDEFINED;
+		}
+
+		int index = 0;
+
+		foreach (var param in parameters)
+		{
+			if (param.GetType() == typeof(int))
+			{
+				byteSize += 4;
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes((int)param), 4));
+				types[index] = RPCValueType.INT;
+			}
+			else if (param.GetType() == typeof(float))
+			{
+				byteSize += 4;
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes((float)param), 4));
+				types[index] = RPCValueType.FLOAT;
+			}
+			else if (param.GetType() == typeof(string))
+			{
+				ushort length = (ushort)(param as string).Length;
+				byteSize += length + 2;
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(length), 2));
+				bytesList.Add(new KeyValuePair<byte[], ushort>(GetEucKrEncoding().GetBytes((string)param), length));
+				types[index] = RPCValueType.STRING;
+			}
+			else if (param.GetType() == typeof(Vector3))
+			{
+				byteSize += 12;
+				Vector3 vec = (Vector3)param;
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(vec.x), 4));
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(vec.y), 4));
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(vec.z), 4));
+				types[index] = RPCValueType.VEC3;
+			}
+			else if (param.GetType() == typeof(Quaternion))
+			{
+				byteSize += 16;
+				Quaternion quat = (Quaternion)param;
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(quat.x), 4));
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(quat.y), 4));
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(quat.z), 4));
+				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(quat.w), 4));
+				types[index] = RPCValueType.QUAT;
+			}
+
+			++index;
+		}
+
+		byte[] bytes = new byte[byteSize];
+		ushort head = 0;
+
+		foreach (var pair in bytesList)
+		{
+			ushort size = pair.Value;
+			Array.Copy(pair.Key, 0, bytes, head, size);
+			head += size;
+		}
+
+		return (bytes, types);
+	}
+
+
+	// 이게 맞나 싶기도 한데...
+	public object[] DeserializeObjects(byte[] bytesToDeserialize, byte[] typeBytes)
+	{
+		// 네트워크 통신 갔다오니까 쓰레기 값으로 96 / 8칸씩 꽉 차서, 별 쓸모가 없네...
+		
+		if (bytesToDeserialize == null
+			|| typeBytes == null
+			|| bytesToDeserialize.Length == 0
+			|| typeBytes.Length == 0)
+		{
+			Debug.Log("역직렬화할 데이터들이 없거나 유효하지 않음!");
+			return null;
+		}
+		
+
+		int validTypeSize = 0;
+		foreach (var type in typeBytes)
+		{
+			// 유효 타입 범위 하드코딩
+			if (type > RPCValueType.UNDEFINED && type <= RPCValueType.QUAT)
+			{
+				++validTypeSize;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if (validTypeSize == 0)
+		{
+			Debug.Log("역직렬화할 데이터가 유효하지 않음!");
+			return null;
+		}
+
+		object[] result = new object[validTypeSize];
+		int size = bytesToDeserialize.Length;
+		int typeIndex = 0;
+		int resultIndex = 0;
+
+		Debug.Log("역직렬화: byte size: " + size + ", typeBytes size: " + typeBytes.Length);
+
+		for (int head = 0; head < size && typeIndex < validTypeSize;)
+		{
+			Debug.Log("시작! head: " + head + ", typeIndex: " + typeIndex + ", resultIndex: " + resultIndex);
+			Debug.Log("typeBytes[typeIndex]: " + typeBytes[typeIndex]);
+
+			switch (typeBytes[typeIndex])
+			{
+				case RPCValueType.INT:
+					result[resultIndex] = BitConverter.ToInt32(bytesToDeserialize, head);
+					head += 4;
+					break;
+
+				case RPCValueType.FLOAT:
+					result[resultIndex] = BitConverter.ToSingle(bytesToDeserialize, head);
+					head += 4;
+					break;
+
+				case RPCValueType.STRING:
+					ushort length = BitConverter.ToUInt16(bytesToDeserialize, head);
+					head += 2;
+					result[resultIndex] = GetEucKrEncoding().GetString(bytesToDeserialize, head, length);
+					head += length;
+					break;
+
+				case RPCValueType.VEC3:
+					Vector3 vec = new Vector3();
+					vec.x = BitConverter.ToSingle(bytesToDeserialize, head);
+					vec.y = BitConverter.ToSingle(bytesToDeserialize, head + 4);
+					vec.z = BitConverter.ToSingle(bytesToDeserialize, head + 8);
+					result[resultIndex] = vec;
+					head += 12;
+					break;
+
+				case RPCValueType.QUAT:
+					Quaternion quat = new Quaternion();
+					quat.x = BitConverter.ToSingle(bytesToDeserialize, head);
+					quat.y = BitConverter.ToSingle(bytesToDeserialize, head + 4);
+					quat.z = BitConverter.ToSingle(bytesToDeserialize, head + 8);
+					quat.w = BitConverter.ToSingle(bytesToDeserialize, head + 12);
+					result[resultIndex] = quat;
+					head += 16;
+					break;
+
+				default:
+					Debug.LogWarning("head: " + head + ", typeIndex: " + typeIndex + ", resultIndex: " + resultIndex);
+					Debug.LogWarning("typeBytes[typeIndex]: " + typeBytes[typeIndex]);
+					Debug.LogError("역직렬화 실패! 타입이 정해지지 않았거나 유효하지 않습니다!");
+					return null;
+
+				// 웬만해서는 실행 안 될 것임...
+				case RPCValueType.UNDEFINED:
+					Debug.LogWarning("역직렬화 중, UNDEFINED를 만나 바로 return됨!");
+					return result;
+			}
+
+			++typeIndex;
+			++resultIndex;
+		}
+
+		return result;
 	}
 
 
@@ -295,7 +498,7 @@ public class SocketConnector : MonoBehaviour
 				}
 
 
-				// RPC 응답
+				// RPC 응답 (파라미터 보유)
 				else if (header.cmd == SpecificationCVSP.CVSP_RPC_RES)
 				{
 					if (header.option == SpecificationCVSP.CVSP_SUCCESS)
@@ -310,6 +513,32 @@ public class SocketConnector : MonoBehaviour
 					else
 					{
 						Debug.LogWarning("RPC 응답을 받았으나, 옵션이 성공이 아님!");
+					}
+				}
+
+
+				// RPC 응답 (파라미터 미보유)
+				else if (header.cmd == SpecificationCVSP.CVSP_RPC_NOPARAM_RES)
+				{
+					if (header.option == SpecificationCVSP.CVSP_SUCCESS)
+					{
+						Debug.Log("RPC 파라미터 없는 응답 성공적으로 받음!");
+
+						RPCInfoNoParam info = new();
+						info = (RPCInfoNoParam)ByteToStructure(payloadByte, info.GetType());
+						RPCInfo noParamInfo = new()
+						{
+							ownerId = info.ownerId,
+							functionName = info.functionName,
+							rpcParams = null,
+							rpcParamTypes = null
+						};
+
+						NetworkConnectionManager.instance.rpcQueue.Enqueue(noParamInfo);
+					}
+					else
+					{
+						Debug.LogWarning("RPC 파라미터 없는 응답을 받았으나, 옵션이 성공이 아님!");
 					}
 				}
 

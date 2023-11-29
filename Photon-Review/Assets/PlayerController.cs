@@ -58,7 +58,9 @@ public class PlayerController : MonoBehaviour
 		if (ownership.bIsMine)
 		{
 			Camera.main.GetComponent<FollowingCamera>().InitializeFollowCamera(this);
-			SetMyNickname(NetworkConnectionManager.instance.localNickname);
+
+			// SetMyNickname RPC
+			NetworkConnectionManager.instance.SendRPCToAll(ownership.id, "SetMyNickname", NetworkConnectionManager.instance.localNickname);
 		}
 
 		NetworkConnectionManager.instance.playerMap.Add(ownership.id, this);
@@ -76,7 +78,7 @@ public class PlayerController : MonoBehaviour
 
 
 	//[PunRPC]
-	private void SetMyNickname(string localNickname)
+	public void SetMyNickname(string localNickname)
 	{
 		nickname = localNickname;
 		nicknameTextHUD.text = nickname;

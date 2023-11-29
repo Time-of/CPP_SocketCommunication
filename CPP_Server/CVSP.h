@@ -42,7 +42,9 @@
 #define CVSP_SPAWN_OBJECT_REQ 0x08
 #define CVSP_SPAWN_OBJECT_RES 0x09
 #define CVSP_RPC_REQ 0x10
-#define CVSP_RPC_RES 0x11
+#define CVSP_RPC_NOPARAM_REQ 0x11
+#define CVSP_RPC_RES 0x12
+#define CVSP_RPC_NOPARAM_RES 0x13
 
 // ¿É¼Ç
 #define CVSP_SUCCESS 0x01
@@ -100,8 +102,16 @@ struct alignas(4) TransformInfo
 
 struct RPCInfo
 {
-	int ownerId;
 	char functionName[20];
+	byte rpcParams[96];
+	byte rpcParamTypes[8];
+	int ownerId;
+};
+
+struct RPCInfoNoParam
+{
+	char functionName[20];
+	int ownerId;
 };
 
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len);

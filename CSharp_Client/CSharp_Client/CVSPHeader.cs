@@ -26,7 +26,31 @@ namespace CVSP
 	[StructLayout(LayoutKind.Sequential)]
 	public unsafe struct RPCInfo
 	{
-		Action functionPointer;
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
+
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+		public string functionName;
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 40, ArraySubType = UnmanagedType.U1)]
+		public fixed byte rpcParams[40];
+	}
+
+
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct ObjectSpawnInfo
+	{
+		[MarshalAs(UnmanagedType.R4)] public float posX;
+		[MarshalAs(UnmanagedType.R4)] public float posY;
+		[MarshalAs(UnmanagedType.R4)] public float posZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatX;
+		[MarshalAs(UnmanagedType.R4)] public float quatY;
+		[MarshalAs(UnmanagedType.R4)] public float quatZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatW;
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
+
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+		public string objectName;
 	}
 
 

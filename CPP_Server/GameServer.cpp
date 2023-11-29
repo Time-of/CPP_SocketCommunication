@@ -181,7 +181,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 			}
 
 
-			// RPC 요청
+			// RPC 요청 (파라미터 보유)
 			case CVSP_RPC_REQ:
 			{
 
@@ -202,6 +202,35 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 				default:
 				{
 					cout << "RPC 요청의 option이 유효하지 않음!\n";
+					break;
+				}
+				}
+
+				break;
+			}
+
+
+			// RPC 요청 (파라미터 미보유)
+			case CVSP_RPC_NOPARAM_REQ:
+			{
+
+				switch (option)
+				{
+				case CVSP_RPCTARGET_ALL:
+				{
+					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+					{
+						if (!infoIter->bIsConnected) continue;
+
+						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_NOPARAM_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(RPCInfoNoParam)));
+						if (sendResult < 0) cout << "NOPARAM RPC 전송 실패!\n";
+					}
+					cout << "NOPARAM RPC 요청 모두에게 전송 완료!\n";
+					break;
+				}
+				default:
+				{
+					cout << "NOPARAM RPC 요청의 option이 유효하지 않음!\n";
 					break;
 				}
 				}

@@ -37,7 +37,7 @@ namespace CVSP
 		[MarshalAs(UnmanagedType.R4)] public float quatY;
 		[MarshalAs(UnmanagedType.R4)] public float quatZ;
 		[MarshalAs(UnmanagedType.R4)] public float quatW;
-		[MarshalAs(UnmanagedType.R4)] public int ownerId;
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
 
 		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
 		public string objectName;
@@ -55,7 +55,7 @@ namespace CVSP
 		[MarshalAs(UnmanagedType.R4)] public float quatY;
 		[MarshalAs(UnmanagedType.R4)] public float quatZ;
 		[MarshalAs(UnmanagedType.R4)] public float quatW;
-		[MarshalAs(UnmanagedType.R4)] public int ownerId;
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
 	};
 
 
@@ -63,15 +63,45 @@ namespace CVSP
 	[StructLayout(LayoutKind.Sequential)]
 	public unsafe struct RPCInfo
 	{
-		[MarshalAs(UnmanagedType.R4)] public int ownerId;
 		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
 		public string functionName;
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 96, ArraySubType = UnmanagedType.U1)]
+		public byte[] rpcParams;
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 8, ArraySubType = UnmanagedType.U1)]
+		public byte[] rpcParamTypes;
+
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
 	}
 
 
-// CVSP 프로토콜의 커맨드, 옵션 등 내부 플래그들을 정의하여
-//  구체화하는 클래스
-public sealed class SpecificationCVSP
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct RPCInfoNoParam
+	{
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+		public string functionName;
+
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
+	}
+
+
+	public static class RPCValueType
+	{
+		public const byte UNDEFINED = 0x00;
+		public const byte INT = 0x01;
+		public const byte FLOAT = 0x02;
+		public const byte STRING = 0x03;
+		public const byte VEC3 = 0x04;
+		public const byte QUAT = 0x05;
+		public const byte END_OF_PARAMS = 0x06;
+	}
+
+
+	// CVSP 프로토콜의 커맨드, 옵션 등 내부 플래그들을 정의하여
+	//  구체화하는 클래스
+	public sealed class SpecificationCVSP
 	{
 		// 프로토콜 버전
 		public static byte CVSP_VER = (byte)0x01;
@@ -87,7 +117,9 @@ public sealed class SpecificationCVSP
 		public static byte CVSP_SPAWN_OBJECT_REQ = (byte)0x08;
 		public static byte CVSP_SPAWN_OBJECT_RES = (byte)0x09;
 		public static byte CVSP_RPC_REQ = (byte)0x10;
-		public static byte CVSP_RPC_RES = (byte)0x11;
+		public static byte CVSP_RPC_NOPARAM_REQ = (byte)0x11;
+		public static byte CVSP_RPC_RES = (byte)0x12;
+		public static byte CVSP_RPC_NOPARAM_RES = (byte)0x13;
 
 		// 프로토콜 옵션
 		public static byte CVSP_SUCCESS = (byte)0x01;

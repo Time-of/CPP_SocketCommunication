@@ -99,7 +99,13 @@ public class NetworkConnectionManager : MonoBehaviour
 			if (playerMap.TryGetValue(info.ownerId, out pc))
 			{
 				var method = pc.GetType().GetMethod(info.functionName);
-				method.Invoke(pc, new object[] { });
+
+				var deserializedParams = socketConnector.DeserializeObjects(info.rpcParams, info.rpcParamTypes);
+				//if (deserializedParams != null)
+				//{
+				//	Debug.Log("역직렬화 결과: " + deserializedParams[0]);
+				//}
+				method.Invoke(pc, deserializedParams);
 			}
 		}
 
@@ -276,9 +282,9 @@ public class NetworkConnectionManager : MonoBehaviour
 	#region RPC
 	// 정석적인 방법이 아닐 수 있음 (본인이 상상으로 구현)
 	// 또한 현재는 플레이어 캐릭터에서만 적용됨
-	public void SendRPCToAll(int id, string funcName)
+	public void SendRPCToAll(int id, string funcName, params object[] param)
 	{
-		socketConnector.SendRPCToAll(id, funcName);
+		socketConnector.SendRPCToAll(id, funcName, param);
 	}
 	#endregion
 }
