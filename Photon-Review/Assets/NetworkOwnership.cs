@@ -10,28 +10,32 @@ using UnityEngine;
 /// 네트워크 오너십 정보를 가진 컴포넌트 클래스.
 /// id가 NetworkConnectionManager의 playerId와 동일하다면 bIsMine은 true, 아니라면 false로 간주.
 /// </summary>
-public class NetworkOwnership : MonoBehaviour
+public class NetworkOwnership : Instantiatable
 {
-	public int id = -1;
-	public bool bIsMine { get { return id == NetworkConnectionManager.instance.playerId; } private set { } }
+	public Player ownerPlayer;
+
+	public int ownerIdForDebug = -1;
+
+	public bool bIsMine { get { return ownerPlayer != null && ownerPlayer.id == NetworkConnectionManager.instance.playerId; } private set { } }
+
+	private void SetOwner(Player NewOwner) { ownerPlayer = NewOwner; }
 
 
-	public static NetworkOwnership Instantiate(string resourceName, Vector3 position, Quaternion rotation)
+	public static Instantiatable RequestInstantiate(string resourceName, Vector3 position, Quaternion rotation, params object[] args)
 	{
-		Debug.Log("NetworkOwnership Instantiate 시도!");
-		NetworkConnectionManager.instance.SendObjectSpawnInfo(resourceName, position, rotation);
-		Debug.Log("NetworkOwnership 생성 명령 전송 완료!");
+		//if ((int)args[0] == NetworkConnectionManager.instance.playerId)
+		{
+			NetworkConnectionManager.instance.SendObjectSpawnInfo(resourceName, position, rotation);
+			Debug.Log("생성 명령 전송 완료!");
+		}
 
-		// 본인만 바로 생성, 다른 사람들은 메시지를 받아 생성. (서버 쪽에서 날린 본인에게는 생성 명령을 주지 않음)
-		// 그래서 타인에게는 [네트워크 딜레이, 큐에 밀린 작업 수, 리소스 Load] 만큼의 오버헤드가 생긴다.
-		// @todo 나중에 개선 가능하다면 개선해보기.
-		return _InternalInstantiate(resourceName, position, rotation, NetworkConnectionManager.instance.playerId);
+		return _InternalInstantiate(resourceName, position, rotation, args);
 	}
 
 	
-	public static NetworkOwnership _InternalInstantiate(string resourceName, Vector3 position, Quaternion rotation, int ownerId)
+	public static Instantiatable _InternalInstantiate(string resourceName, Vector3 position, Quaternion rotation, params object[] args)
 	{
-		var prefab = Resources.Load<NetworkOwnership>(resourceName);
+		var prefab = Resources.Load<Instantiatable>(resourceName);
 
 		if (prefab == null)
 		{
@@ -39,10 +43,25 @@ public class NetworkOwnership : MonoBehaviour
 			return null;
 		}
 
-		NetworkOwnership ownershipObject = GameObject.Instantiate<NetworkOwnership>(prefab, position, rotation);
-
-		ownershipObject.id = ownerId;
+		Instantiatable ownershipObject = Instantiate<Instantiatable>(prefab, position, rotation);
+		ownershipObject.OnCreated(args);
 
 		return ownershipObject;
+	}
+
+
+	public override void OnCreated(params object[] args)
+	{
+		Player owner = null;
+		if (NetworkConnectionManager.instance.playerMap.TryGetValue((int)args[0], out owner))
+		{
+			SetOwner(owner);
+			ownerIdForDebug = owner.id;
+			Debug.Log("NetworkOwnership OnCreated: 오너 설정 완료! " + owner);
+		}
+		else
+		{
+			Debug.LogWarning("네트워크 스폰: Owner가 존재하지 않거나 NetworkOwnership을 가지고 있지 않아요!");
+		}
 	}
 }

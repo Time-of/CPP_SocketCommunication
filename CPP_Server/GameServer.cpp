@@ -242,23 +242,43 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 			// Join 요청
 			case CVSP_JOINREQ:
 			{
-				cout << "클라이언트 " << id << "에서 Join 요청! 닉네임: " << extraPacket << "\n";
+				// 클라이언트에서는 닉네임만 보냄, id는 서버가 할당
+				char nickname[20];
+				strcpy_s(nickname, 19, extraPacket);
 
-				// 요청자 본인에게 int 타입으로 id 전송
+				iter->id = id;
+				iter->nickname = nickname;
+
+				cout << "클라이언트 " << id << "에서 Join 요청! 닉네임: " << iter->nickname << "\n";
+				cout << "닉네임 길이: " << iter->nickname.length() << "\n";
+
+				PlayerInfo myInfo;
+				myInfo.id = id;
+				strcpy_s(myInfo.nickname, 19, nickname);
+
+				// 요청자 본인에게 id 전송
 				if (SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_SUCCESS, (int*)&id, static_cast<uint16>(sizeof(int))) < 0)
 				{
 					cout << "클라이언트 " << id << "에서 Join 요청 응답하기 위해 Send하는 데 오류 발생!\n";
 				}
 
-				// 방금 접속한 사람에게, 기존 접속자의 정보를 알려주기
+				
 				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
 				{
-					if (!infoIter->bIsConnected) continue;
-					int clientId = 100 - (infoIter - clientArray.begin() + 1);
-					if (clientId == id) continue;
+					if (!infoIter->bIsConnected or infoIter->id == id) continue;
+					//int clientId = 100 - (infoIter - clientArray.begin() + 1);
 
-					int sendResult = SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_NEW_USER, (int*)&clientId, static_cast<uint16>(sizeof(int)));
-					cout << "클라이언트 " << id << "에게 " << clientId << "의 Join 정보 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
+					PlayerInfo info;
+					info.id = infoIter->id;
+					strcpy_s(info.nickname, 19, infoIter->nickname.c_str());
+
+					// 방금 접속한 사람에게, 기존 접속자의 정보(PlayerInfo)를 알려주기
+					int sendResult = SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_NEW_USER, &info, static_cast<uint16>(sizeof(PlayerInfo)));
+					cout << "클라이언트 [" << iter->id << "] " << iter->nickname << "에게 [" << infoIter->id << "] " << infoIter->nickname << "의 Join 정보 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
+
+					// 방급 접속한 유저 정보를 기존 유저들에게 전송하기
+					//sendResult = SendCVSP((uint32)infoIter->socket, CVSP_JOINRES, CVSP_NEW_USER, &myInfo, static_cast<uint16>(sizeof(PlayerInfo)));
+					//cout << "클라이언트 [" << infoIter->id << "] 에게 [" << iter->id << "] 가 새로 Join했음을 알리는 데 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
 				}
 				break;
 			}

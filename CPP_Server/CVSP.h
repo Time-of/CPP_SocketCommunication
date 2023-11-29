@@ -114,5 +114,11 @@ struct RPCInfoNoParam
 	int ownerId;
 };
 
+struct PlayerInfo
+{
+	char nickname[20];
+	int id;
+};
+
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len);
 int RecvCVSP(uint32 socketfd, uint8* cmd, uint8* option, void* payload, uint16 len);

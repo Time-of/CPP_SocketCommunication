@@ -87,6 +87,17 @@ namespace CVSP
 	}
 
 
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct PlayerInfo
+	{
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+		public string nickname;
+
+		[MarshalAs(UnmanagedType.I4)] public int id;
+	}
+
+
 	public static class RPCValueType
 	{
 		public const byte UNDEFINED = 0x00;
@@ -95,7 +106,6 @@ namespace CVSP
 		public const byte STRING = 0x03;
 		public const byte VEC3 = 0x04;
 		public const byte QUAT = 0x05;
-		public const byte END_OF_PARAMS = 0x06;
 	}
 
 

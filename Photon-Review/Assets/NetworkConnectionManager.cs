@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 using UnityEngine.UI;
 using System;
 using UnityEngine.Events;
-
+using UnityEngine.AI;
 
 [RequireComponent(typeof(SocketConnector))]
 public class NetworkConnectionManager : MonoBehaviour
@@ -43,12 +43,10 @@ public class NetworkConnectionManager : MonoBehaviour
 
 	public Queue<TransformInfo> transformInfoQueue = new();
 
-	public UnityAction OnJoinSuccessedDelegate;
-
 	public int playerId { get; private set; }
 
-	// id, 플레이어 딕셔너리
-	public Dictionary<int, PlayerController> playerMap = new();
+	public Dictionary<int, PlayerController> playerCharacterMap = new();
+	public Dictionary<int, Player> playerMap = new();
 	#endregion
 
 
@@ -96,7 +94,7 @@ public class NetworkConnectionManager : MonoBehaviour
 			var info = rpcQueue.Dequeue();
 			PlayerController pc = null;
 
-			if (playerMap.TryGetValue(info.ownerId, out pc))
+			if (playerCharacterMap.TryGetValue(info.ownerId, out pc))
 			{
 				var method = pc.GetType().GetMethod(info.functionName);
 
@@ -114,7 +112,7 @@ public class NetworkConnectionManager : MonoBehaviour
 			var info = transformInfoQueue.Dequeue();
 			PlayerController pc = null;
 
-			if (playerMap.TryGetValue(info.ownerId, out pc))
+			if (playerCharacterMap.TryGetValue(info.ownerId, out pc))
 			{
 				pc.UpdateNetworkingTransform(new Vector3(info.posX, info.posY, info.posZ), new Quaternion(info.quatX, info.quatY, info.quatZ, info.quatW));
 			}
@@ -159,7 +157,6 @@ public class NetworkConnectionManager : MonoBehaviour
 		playerId = NewPlayerId;
 		Debug.Log("Join 성공. id: " + playerId);
 
-		actionQueue.Enqueue(() => OnJoinSuccessedDelegate.Invoke());
 		actionQueue.Enqueue(() => chattingScrollBox.gameObject.SetActive(true));
 	}
 
@@ -249,6 +246,19 @@ public class NetworkConnectionManager : MonoBehaviour
 	public void AddObjectSpawnInfoToActionQueue(string resourceName, Vector3 position, Quaternion rotation, int ownerId)
 	{
 		actionQueue.Enqueue(() => NetworkOwnership._InternalInstantiate(resourceName, position, rotation, ownerId));
+	}
+
+
+	public void AddPlayer(PlayerInfo info)
+	{
+		if (playerMap.ContainsKey(info.id))
+		{
+			Debug.Log("이미 존재하는 플레이어가 있어, 요청하지 않음");
+
+			return;
+		}
+
+		actionQueue.Enqueue(() => Player.Instantiate(info));
 	}
 	#endregion
 

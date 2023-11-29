@@ -5,7 +5,7 @@ using UnityEngine;
 using TMPro;
 using System.IO;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkOwnership
 {
 	private float h = 0f;
 	private float v = 0f;
@@ -33,9 +33,6 @@ public class PlayerController : MonoBehaviour
 
 
 	[Header("<네트워킹>")]
-
-	private NetworkOwnership ownership;
-
 	[SerializeField]
 	protected float NetworkingRotationInterpSpeed = 25.0f;
 
@@ -49,21 +46,21 @@ public class PlayerController : MonoBehaviour
 	private void Awake()
 	{
 		animComp = GetComponent<Animator>();
-		ownership = GetComponent<NetworkOwnership>();
 	}
 
 
 	private void Start()
 	{
-		if (ownership.bIsMine)
+		if (bIsMine)
 		{
 			Camera.main.GetComponent<FollowingCamera>().InitializeFollowCamera(this);
-
-			// SetMyNickname RPC
-			NetworkConnectionManager.instance.SendRPCToAll(ownership.id, "SetMyNickname", NetworkConnectionManager.instance.localNickname);
 		}
 
-		NetworkConnectionManager.instance.playerMap.Add(ownership.id, this);
+		NetworkConnectionManager.instance.playerCharacterMap.Add(ownerPlayer.id, this);
+		SetMyNickname(ownerPlayer.nickname);
+
+		// SetMyNickname RPC
+		//NetworkConnectionManager.instance.SendRPCToAll(owner.id, "SetMyNickname", NetworkConnectionManager.instance.localNickname);
 
 		//if (photonView.IsMine)
 		//photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
@@ -87,13 +84,13 @@ public class PlayerController : MonoBehaviour
 
 	private void Update()
 	{
-		if (ownership.bIsMine)
+		if (bIsMine)
 		{
 			h = Input.GetAxis("Horizontal");
 			v = Input.GetAxis("Vertical");
 			aimYaw += Input.GetAxis("Mouse X");
 			aimPitch += -Input.GetAxis("Mouse Y");
-			aimPitch = Mathf.Clamp(aimPitch, -60.0f, 60.0f);
+			aimPitch = Mathf.Clamp(aimPitch, -5.0f, 45.0f);
 
 			velocity = new Vector3(h, 0.0f, v).normalized * Time.deltaTime * speed;
 			transform.Translate(velocity);
@@ -149,18 +146,21 @@ public class PlayerController : MonoBehaviour
 	{
 		//transform.position = Vector3.MoveTowards(transform.position, NetworkingPosition,
 		//	NetworkingDistance * (1.0f / PhotonNetwork.SerializationRate));
+		Vector3 oldPos = transform.position;
 
 		transform.position = Vector3.Lerp(transform.position, NetworkingPosition,
 			20.0f * Time.deltaTime);
 		transform.rotation = Quaternion.Slerp(transform.rotation, NetworkingRotation,
 			NetworkingRotationInterpSpeed * Time.fixedDeltaTime);
+
+		velocity = transform.position - oldPos;
 	}
 
 
 	private void PerformAttack()
 	{
 		//photonView.RPC("RPCPerformAttackAll", RpcTarget.All);
-		NetworkConnectionManager.instance.SendRPCToAll(ownership.id, "RPCPerformAttackAll");
+		NetworkConnectionManager.instance.SendRPCToAll(ownerPlayer.id, "RPCPerformAttackAll");
 	}
 
 

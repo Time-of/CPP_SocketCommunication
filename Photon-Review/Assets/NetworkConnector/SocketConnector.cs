@@ -559,23 +559,31 @@ public class SocketConnector : MonoBehaviour
 							Debug.Log("Join 상태 true, 나의 id: " + playerId);
 
 							NetworkConnectionManager.instance.OnJoinSuccessed(playerId);
+
+							PlayerInfo info = new()
+							{
+								id = playerId,
+								nickname = NetworkConnectionManager.instance.localNickname
+							};
+
+							// 플레이어 생성 요청
+							NetworkConnectionManager.instance.AddPlayer(info);
 						}
 					}
 					else
 					{
 						if (header.option == SpecificationCVSP.CVSP_NEW_USER)
 						{
-							// (하드코딩) 다른 플레이어가 들어온 경우, 다른 플레이어의 캐릭터 스폰
-							int otherPlayerId = ByteToInt(payloadByte);
+							PlayerInfo info = new();
+							info = (PlayerInfo)ByteToStructure(payloadByte, info.GetType());
 
-							Debug.Log("다른 플레이어, " + otherPlayerId + " 가 게임에 참가함!");
+							if (info.id != NetworkConnectionManager.instance.playerId)
+							{
+								Debug.Log("플레이어 [" + info.id + "] " + info.nickname + " 의 정보 받음!");
 
-							NetworkConnectionManager.instance.AddObjectSpawnInfoToActionQueue(
-								"Player",
-								Vector3.zero,
-								Quaternion.identity,
-								otherPlayerId
-								);
+								// 플레이어 생성 요청
+								NetworkConnectionManager.instance.AddPlayer(info);
+							}
 						}
 						else
 						{

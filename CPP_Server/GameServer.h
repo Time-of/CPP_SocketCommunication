@@ -19,20 +19,18 @@ struct ClientInfo
 {
 public:
 	bool bIsConnected;
-	char id[50];
+	string nickname;
+	int id;
 	SOCKET socket;
 	HANDLE clientHandle;
-	//HANDLE listenHandle;
-
-	//thread clientThread;
 
 	ClientInfo()
 	{
 		socket = NULL;
 		bIsConnected = false;
-		ZeroMemory(&id, sizeof(id));
+		nickname = "";
+		id = -1;
 		clientHandle = NULL;
-		//listenHandle = NULL;
 	}
 };
 
