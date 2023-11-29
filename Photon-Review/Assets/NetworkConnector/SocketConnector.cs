@@ -278,6 +278,15 @@ public class SocketConnector : MonoBehaviour
 				}
 
 
+				// 트랜스폼 정보 응답
+				else if (header.cmd == SpecificationCVSP.CVSP_MONITORINGMSG)
+				{
+					TransformInfo info = new();
+					info = (TransformInfo)ByteToStructure(payloadByte, info.GetType());
+					NetworkConnectionManager.instance.EnqueueTransformInfo(info);
+				}
+
+
 				// Join 응답
 				else if (header.cmd == SpecificationCVSP.CVSP_JOINRES)
 				{

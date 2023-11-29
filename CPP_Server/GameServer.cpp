@@ -164,6 +164,23 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 			}
 
 
+			// 이동 정보 요청 (TransformInfo)
+			case CVSP_OPERATIONREQ:
+			{
+				// 본인 제외 다른 클라이언트 모두에게 뿌리기
+				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+				{
+					if (!infoIter->bIsConnected) continue;
+					int clientId = 100 - (infoIter - clientArray.begin() + 1);
+					if (clientId == id) continue;
+
+					int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_MONITORINGMSG, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(TransformInfo)));
+					cout << "TransformInfo를 " << id << " 에게서 " << clientId << " 에게 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패!\n");
+				}
+				break;
+			}
+
+
 			// Join 요청
 			case CVSP_JOINREQ:
 			{

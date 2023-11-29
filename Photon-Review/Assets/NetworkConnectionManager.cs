@@ -8,6 +8,7 @@ using UnityEngine.UI;
 using System;
 using UnityEngine.Events;
 
+
 [RequireComponent(typeof(SocketConnector))]
 public class NetworkConnectionManager : MonoBehaviour
 {
@@ -39,9 +40,14 @@ public class NetworkConnectionManager : MonoBehaviour
 
 	public Queue<Action> actionQueue = new();
 
+	public Queue<TransformInfo> transformInfoQueue = new();
+
 	public UnityAction OnJoinSuccessedDelegate;
 
 	public int playerId { get; private set; }
+
+	// id, ÇÃ·¹ÀÌ¾î µñ¼Å³Ê¸®
+	public Dictionary<int, PlayerController> playerMap = new();
 	#endregion
 
 
@@ -82,6 +88,17 @@ public class NetworkConnectionManager : MonoBehaviour
 		while (actionQueue.Count > 0)
 		{
 			actionQueue.Dequeue().Invoke();
+		}
+
+		while (transformInfoQueue.Count > 0)
+		{
+			var info = transformInfoQueue.Dequeue();
+			PlayerController pc = null;
+
+			if (playerMap.TryGetValue(info.ownerId, out pc))
+			{
+				pc.UpdateNetworkingTransform(new Vector3(info.posX, info.posY, info.posZ), new Quaternion(info.quatX, info.quatY, info.quatZ, info.quatW));
+			}
 		}
 	}
 
@@ -213,6 +230,32 @@ public class NetworkConnectionManager : MonoBehaviour
 	public void AddObjectSpawnInfoToActionQueue(string resourceName, Vector3 position, Quaternion rotation, int ownerId)
 	{
 		actionQueue.Enqueue(() => NetworkOwnership._InternalInstantiate(resourceName, position, rotation, ownerId));
+	}
+	#endregion
+
+
+	#region Æ®·£½ºÆû
+	public void SendTransformExceptScale(Transform tr)
+	{
+		TransformInfo info = new()
+		{
+			posX = tr.position.x,
+			posY = tr.position.y,
+			posZ = tr.position.z,
+			quatX = tr.rotation.x,
+			quatY = tr.rotation.y,
+			quatZ = tr.rotation.z,
+			quatW = tr.rotation.w,
+			ownerId = playerId
+		};
+
+		socketConnector.SendWithPayload(SpecificationCVSP.CVSP_OPERATIONREQ, SpecificationCVSP.CVSP_SUCCESS, info);
+	}
+
+	
+	public void EnqueueTransformInfo(TransformInfo info)
+	{
+		transformInfoQueue.Enqueue(info);
 	}
 	#endregion
 }

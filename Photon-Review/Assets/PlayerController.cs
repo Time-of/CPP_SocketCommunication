@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 //using Photon.Pun;
 using TMPro;
+using System.IO;
 
 public class PlayerController : MonoBehaviour
 {
@@ -60,8 +61,17 @@ public class PlayerController : MonoBehaviour
 			SetMyNickname(NetworkConnectionManager.instance.localNickname);
 		}
 
+		NetworkConnectionManager.instance.playerMap.Add(ownership.id, this);
+
 		//if (photonView.IsMine)
 		//photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
+	}
+
+
+	public void UpdateNetworkingTransform(Vector3 pos, Quaternion rot)
+	{
+		NetworkingPosition = pos;
+		NetworkingRotation = rot;
 	}
 
 
@@ -92,10 +102,12 @@ public class PlayerController : MonoBehaviour
 				);
 
 			if (Input.GetMouseButtonDown(0)) PerformAttack();
+
+			NetworkConnectionManager.instance.SendTransformExceptScale(transform);
 		}
 		else
 		{
-			UpdateNetworkingTransform();
+			PerformUpdateNotMineTransform();
 		}
 
 		animComp.SetFloat("Speed", velocity.magnitude);
@@ -131,18 +143,15 @@ public class PlayerController : MonoBehaviour
 	*/
 
 
-	void UpdateNetworkingTransform()
+	void PerformUpdateNotMineTransform()
 	{
-		/*
-		if (!photonView.IsMine)
-		{
-			transform.position = Vector3.MoveTowards(transform.position, NetworkingPosition,
-				NetworkingDistance * (1.0f / PhotonNetwork.SerializationRate));
+		//transform.position = Vector3.MoveTowards(transform.position, NetworkingPosition,
+		//	NetworkingDistance * (1.0f / PhotonNetwork.SerializationRate));
 
-			transform.rotation = Quaternion.Slerp(transform.rotation, NetworkingRotation,
-				NetworkingRotationInterpSpeed * Time.fixedDeltaTime);
-		}
-		*/
+		transform.position = Vector3.Lerp(transform.position, NetworkingPosition,
+			20.0f * Time.deltaTime);
+		transform.rotation = Quaternion.Slerp(transform.rotation, NetworkingRotation,
+			NetworkingRotationInterpSpeed * Time.fixedDeltaTime);
 	}
 
 

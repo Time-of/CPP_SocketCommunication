@@ -83,5 +83,17 @@ struct ObjectSpawnInfo
 	char objectName[32];
 };
 
+struct alignas(4) TransformInfo
+{
+	float posX;
+	float posY;
+	float posZ;
+	float quatX;
+	float quatY;
+	float quatZ;
+	float quatW;
+	int ownerId;
+};
+
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len);
 int RecvCVSP(uint32 socketfd, uint8* cmd, uint8* option, void* payload, uint16 len);

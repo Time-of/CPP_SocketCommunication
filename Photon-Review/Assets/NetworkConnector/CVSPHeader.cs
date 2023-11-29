@@ -24,7 +24,7 @@ namespace CVSP
 
 
 	/// <summary>
-	/// 36바이트짜리, 오브젝트 스폰 정보.
+	/// 64바이트짜리, 오브젝트 스폰 정보.
 	/// </summary>
 	[System.Serializable]
 	[StructLayout(LayoutKind.Sequential)]
@@ -44,9 +44,24 @@ namespace CVSP
 	}
 
 
-	// CVSP 프로토콜의 커맨드, 옵션 등 내부 플래그들을 정의하여
-	//  구체화하는 클래스
-	public sealed class SpecificationCVSP
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct TransformInfo
+	{
+		[MarshalAs(UnmanagedType.R4)] public float posX;
+		[MarshalAs(UnmanagedType.R4)] public float posY;
+		[MarshalAs(UnmanagedType.R4)] public float posZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatX;
+		[MarshalAs(UnmanagedType.R4)] public float quatY;
+		[MarshalAs(UnmanagedType.R4)] public float quatZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatW;
+		[MarshalAs(UnmanagedType.R4)] public int ownerId;
+	};
+
+
+// CVSP 프로토콜의 커맨드, 옵션 등 내부 플래그들을 정의하여
+//  구체화하는 클래스
+public sealed class SpecificationCVSP
 	{
 		// 프로토콜 버전
 		public static byte CVSP_VER = (byte)0x01;
