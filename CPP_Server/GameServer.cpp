@@ -1,5 +1,6 @@
 #include "GameServer.h"
 #include "CPP_Server/GameplayCalcs.h"
+#include "CPP_Server/Serializer.h"
 
 #include <algorithm>
 
@@ -218,10 +219,11 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 					//std::lock_guard<std::mutex> lockCalc(mt);
 
 					
-					// @todo 역직렬화 추가
-					vector<void*> args;
+					// 역직렬화
+					vector<void*> args = std::move(Serializer::Deserialize(info.rpcParams, info.rpcParamTypes));
+					
 
-
+					// 계산
 					CalcResult calcResult = GameplayCalcs::GetInstance().InvokeFunction(info.functionName, args);
 					if (calcResult.broadcastFunctionName.length() >= 20)
 					{
@@ -229,13 +231,21 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 						break;
 					}
 					
-					// @todo 직렬화 추가
+					
 					RPCInfo resultInfo;
 					ZeroMemory(&resultInfo, sizeof(RPCInfo));
 					resultInfo.ownerId = info.ownerId;
 					strcpy_s(resultInfo.functionName, calcResult.broadcastFunctionName.length(), calcResult.broadcastFunctionName.c_str());
-					//resultInfo.rpcParams = 직렬화!
+					
+					// 직렬화
+					vector<byte> outSerializedBytes;
+					bool serializeResult = Serializer::Serialize(calcResult.result, calcResult.typeInfos, outSerializedBytes);
+					if (!serializeResult) cout << "직렬화 실패!\n";
+					std::copy(outSerializedBytes.begin(), outSerializedBytes.end(), resultInfo.rpcParams);
+					std::copy(calcResult.typeInfos.begin(), calcResult.typeInfos.end(), resultInfo.rpcParamTypes);
 
+
+					// 결과 전송
 					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
 					{
 						if (!infoIter->bIsConnected) continue;

@@ -7,11 +7,10 @@
 
 int main(int argc, char* argv)
 {
-	system("mode con:cols=70 lines=20");
-	printf("%d\n", sizeof(RPCInfo));
+	system("mode con:cols=72 lines=40");
+
 	GameServer server;
 	server.Listen(5004);
-	//server.Wait();
 
 	return 0;
 }

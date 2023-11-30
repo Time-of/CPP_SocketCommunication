@@ -319,7 +319,7 @@ public class SocketConnector : MonoBehaviour
 				ushort length = (ushort)(param as string).Length;
 				byteSize += length + 2;
 				bytesList.Add(new KeyValuePair<byte[], ushort>(BitConverter.GetBytes(length), 2));
-				bytesList.Add(new KeyValuePair<byte[], ushort>(GetEucKrEncoding().GetBytes((string)param), length));
+				bytesList.Add(new KeyValuePair<byte[], ushort>(Encoding.ASCII.GetBytes((string)param), length));
 				types[index] = RPCValueType.STRING;
 			}
 			else if (param.GetType() == typeof(Vector3))
@@ -421,7 +421,7 @@ public class SocketConnector : MonoBehaviour
 				case RPCValueType.STRING:
 					ushort length = BitConverter.ToUInt16(bytesToDeserialize, head);
 					head += 2;
-					result[resultIndex] = GetEucKrEncoding().GetString(bytesToDeserialize, head, length);
+					result[resultIndex] = Encoding.ASCII.GetString(bytesToDeserialize, head, length);
 					head += length;
 					break;
 

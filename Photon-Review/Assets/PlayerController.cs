@@ -164,6 +164,7 @@ public class PlayerController : NetworkOwnership
 	{
 		//photonView.RPC("RPCPerformAttackAll", RpcTarget.All);
 		NetworkConnectionManager.instance.SendRPCToAll(ownerPlayer.id, "RPCPerformAttackAll");
+		NetworkConnectionManager.instance.SendRPCToServer(ownerPlayer.id, "RPCTakeDamageServer", 2.0f, defense);
 	}
 
 
@@ -188,6 +189,15 @@ public class PlayerController : NetworkOwnership
 
 	public void RPCTakeDamageAll(float damage)
 	{
+		if (hp <= 0.0f) return;
+
 		animComp.SetTrigger("Damaged");
+		Debug.Log("피해 입음! 피해량: " + damage);
+		hp -= damage;
+
+		if (hp <= 0.0f)
+		{
+			animComp.SetBool("Dead", true);
+		}
 	}
 }

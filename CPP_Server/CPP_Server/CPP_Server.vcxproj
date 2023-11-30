@@ -131,11 +131,13 @@
     <ClCompile Include="..\GameServer.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="GameplayCalcs.cpp" />
+    <ClCompile Include="Serializer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\CVSP.h" />
     <ClInclude Include="..\GameServer.h" />
     <ClInclude Include="GameplayCalcs.h" />
+    <ClInclude Include="Serializer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

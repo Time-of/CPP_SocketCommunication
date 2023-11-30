@@ -121,5 +121,15 @@ struct PlayerInfo
 	int id;
 };
 
+struct RPCValueType
+{
+	static const byte UNDEFINED = 0x00;
+	static const byte INT = 0x01;
+	static const byte FLOAT = 0x02;
+	static const byte STRING = 0x03;
+	static const byte VEC3 = 0x04;
+	static const byte QUAT = 0x05;
+};
+
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len);
 int RecvCVSP(uint32 socketfd, uint8* cmd, uint8* option, void* payload, uint16 len);

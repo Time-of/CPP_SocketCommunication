@@ -1,6 +1,7 @@
 #include "GameplayCalcs.h"
 // include할 때 "CPP_Server/GameplayCalcs.h" 로 해야 함
 
+
 #include <cassert>
 
 
@@ -21,7 +22,7 @@ GameplayCalcs& GameplayCalcs::GetInstance()
 }
 
 
-const CalcResult& GameplayCalcs::InvokeFunction(const std::string& functionName, const std::vector<void*>& args)
+const CalcResult GameplayCalcs::InvokeFunction(const std::string& functionName, const std::vector<void*>& args)
 {
 	CalcResult result = functionMap[functionName](args);
 
@@ -29,7 +30,7 @@ const CalcResult& GameplayCalcs::InvokeFunction(const std::string& functionName,
 }
 
 
-const CalcResult& GameplayCalcs::RPCTakeDamageServer(const std::vector<void*>& args)
+const CalcResult GameplayCalcs::RPCTakeDamageServer(const std::vector<void*>& args)
 {
 	// 각 형태에 맞는 주소로 형변환 후 값 가져오기...
 	// 역직렬화가 되었다고 가정하고 수행
@@ -37,16 +38,17 @@ const CalcResult& GameplayCalcs::RPCTakeDamageServer(const std::vector<void*>& a
 	assert(sizeof(args[0]) == sizeof(float));
 	assert(sizeof(args[1]) == sizeof(int));
 
-	float damage;
-	int defense;
+	float damage = *(float*)args[0];
+	int defense = *(int*)args[1];
 
-	memcpy(&damage, args[0], sizeof(float));
-	memcpy(&defense, args[1], sizeof(int));
+	//memcpy(&damage, args[0], sizeof(float));
+	//memcpy(&defense, args[1], sizeof(int));
 
 	float result = damage - defense;
 	CalcResult returnValue;
-	returnValue.result = &result;
+	returnValue.result.push_back(&result);
 	returnValue.broadcastFunctionName = std::move(std::string("RPCTakeDamageAll"));
+	returnValue.typeInfos.push_back(RPCValueType::FLOAT);
 
 	return returnValue;
 }
