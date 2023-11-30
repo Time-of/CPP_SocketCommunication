@@ -277,8 +277,8 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 					cout << "클라이언트 [" << iter->id << "] " << iter->nickname << "에게 [" << infoIter->id << "] " << infoIter->nickname << "의 Join 정보 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
 
 					// 방급 접속한 유저 정보를 기존 유저들에게 전송하기
-					//sendResult = SendCVSP((uint32)infoIter->socket, CVSP_JOINRES, CVSP_NEW_USER, &myInfo, static_cast<uint16>(sizeof(PlayerInfo)));
-					//cout << "클라이언트 [" << infoIter->id << "] 에게 [" << iter->id << "] 가 새로 Join했음을 알리는 데 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
+					sendResult = SendCVSP((uint32)infoIter->socket, CVSP_JOINRES, CVSP_NEW_USER, &myInfo, static_cast<uint16>(sizeof(PlayerInfo)));
+					cout << "클라이언트 [" << infoIter->id << "] 에게 [" << iter->id << "] 가 새로 Join했음을 알리는 데 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
 				}
 				break;
 			}

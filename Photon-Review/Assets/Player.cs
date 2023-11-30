@@ -18,13 +18,12 @@ public class Player : Instantiatable
 	public PlayerController character = null;
 	public bool bIsMine { get { return id == NetworkConnectionManager.instance.playerId; } private set { } }
 
-	// 캐릭터 생성 요청
-	public void RequestSpawnPlayerCharacter(bool bForce = false)
+	
+	public void SpawnPlayerCharacter()
 	{
-		if (NetworkConnectionManager.instance.playerCharacterMap.ContainsKey(id)) return;
-
-		Debug.Log("플레이어 " + id + " 에서 캐릭터 생성 요청!");
-		character = NetworkOwnership.RequestInstantiate("Player", Vector3.zero, Quaternion.identity, id) as PlayerController;
+		Debug.Log("플레이어 " + id + " 에서 캐릭터 생성!");
+		//character = NetworkOwnership.RequestInstantiate("Player", Vector3.zero, Quaternion.identity, id) as PlayerController;
+		character = NetworkOwnership._InternalInstantiate("Player", Vector3.zero, Quaternion.identity, id) as PlayerController;
 	}
 
 
@@ -65,7 +64,7 @@ public class Player : Instantiatable
 
 		NetworkConnectionManager.instance.playerMap.Add(id, this);
 
-		RequestSpawnPlayerCharacter();
+		SpawnPlayerCharacter();
 	}
 
 
