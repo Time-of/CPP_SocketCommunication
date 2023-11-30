@@ -51,6 +51,7 @@
 #define CVSP_FAIL 0x02
 #define CVSP_NEW_USER 0x03
 #define CVSP_RPCTARGET_ALL 0x04
+#define CVSP_RPCTARGET_SERVER 0x05
 
 
 #ifdef WIN32

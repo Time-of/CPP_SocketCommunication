@@ -222,7 +222,7 @@ public class SocketConnector : MonoBehaviour
 	}
 
 
-	// 파라미터 기능 추가 시도...
+	// 서버를 거쳐서 서버가 모두에게 뿌림
 	public int SendRPCToAll(int id, string funcName, params object[] parameters)
 	{
 		if (parameters.Length > 0)
@@ -234,6 +234,23 @@ public class SocketConnector : MonoBehaviour
 		else
 		{
 			return SendRPCToAll(id, funcName);
+		}
+	}
+
+
+	// 서버에게만 RPC 요청
+	public int SendRPCToServer(int id, string funcName, params object[] parameters)
+	{
+		if (parameters.Length > 0)
+		{
+			var params_types = SerializeObjects(parameters);
+			RPCInfo info = new() { ownerId = id, functionName = funcName, rpcParams = params_types.Item1, rpcParamTypes = params_types.Item2 };
+			return SendWithPayload(SpecificationCVSP.CVSP_RPC_REQ, SpecificationCVSP.CVSP_RPCTARGET_SERVER, info);
+		}
+		else
+		{
+			Debug.LogWarning("서버에만 보내는 NOPARAM RPC는 아직 미구현...");
+			return 0;
 		}
 	}
 
@@ -503,10 +520,10 @@ public class SocketConnector : MonoBehaviour
 				{
 					if (header.option == SpecificationCVSP.CVSP_SUCCESS)
 					{
-						Debug.Log("RPC 응답 성공적으로 받음!");
-
 						RPCInfo info = new();
 						info = (RPCInfo)ByteToStructure(payloadByte, info.GetType());
+
+						Debug.Log("<color.green>RPC</color> [" + info.functionName + "] <color.green>성공적으로 응답 받음!</color>");
 
 						NetworkConnectionManager.instance.rpcQueue.Enqueue(info);
 					}
@@ -522,8 +539,6 @@ public class SocketConnector : MonoBehaviour
 				{
 					if (header.option == SpecificationCVSP.CVSP_SUCCESS)
 					{
-						Debug.Log("RPC 파라미터 없는 응답 성공적으로 받음!");
-
 						RPCInfoNoParam info = new();
 						info = (RPCInfoNoParam)ByteToStructure(payloadByte, info.GetType());
 						RPCInfo noParamInfo = new()
@@ -533,6 +548,8 @@ public class SocketConnector : MonoBehaviour
 							rpcParams = null,
 							rpcParamTypes = null
 						};
+
+						Debug.Log("<color.green>RPC</color> [" + noParamInfo.functionName + "] <color.green>성공적으로 응답 받음!</color>");
 
 						NetworkConnectionManager.instance.rpcQueue.Enqueue(noParamInfo);
 					}

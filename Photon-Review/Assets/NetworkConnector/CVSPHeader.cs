@@ -136,6 +136,7 @@ namespace CVSP
 		public static byte CVSP_FAIL = (byte)0x02;
 		public static byte CVSP_NEW_USER = (byte)0x03;
 		public static byte CVSP_RPCTARGET_ALL = (byte)0x04;
+		public static byte CVSP_RPCTARGET_SERVER = (byte)0x05;
 
 		public static int CVSP_SIZE = 4;
 		public static int CVSP_BUFFERSIZE = 4096;

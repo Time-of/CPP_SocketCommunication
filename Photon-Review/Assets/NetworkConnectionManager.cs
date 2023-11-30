@@ -205,7 +205,7 @@ public class NetworkConnectionManager : MonoBehaviour
 
 
 	//[PunRPC]
-	public IEnumerator RPCSendChatAll(string message)
+	public IEnumerator UpdateChattingBoxCoroutine(string message)
 	{
 		chattingBox.text += message;
 		yield return null;
@@ -224,7 +224,7 @@ public class NetworkConnectionManager : MonoBehaviour
 				string receivedMessage = chattingQueue.Dequeue();
 
 				// 기존 기능 사용, 이건 RPC는 아님.
-				StartCoroutine(RPCSendChatAll(receivedMessage));
+				StartCoroutine(UpdateChattingBoxCoroutine(receivedMessage));
 			}
 
 			yield return chattingPeekDelay;
@@ -295,6 +295,13 @@ public class NetworkConnectionManager : MonoBehaviour
 	public void SendRPCToAll(int id, string funcName, params object[] param)
 	{
 		socketConnector.SendRPCToAll(id, funcName, param);
+	}
+
+
+	public void SendRPCToServer(int id, string funcName, params object[] parameters)
+	{
+		int result = socketConnector.SendRPCToServer(id, funcName, parameters);
+		if (result <= 0) Debug.LogWarning("RPC를 서버에 전송하려 했으나, 실패!: " + result);
 	}
 	#endregion
 }

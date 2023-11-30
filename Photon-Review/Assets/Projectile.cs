@@ -34,7 +34,7 @@ public class Projectile : MonoBehaviour
 
 			if (PC != null)
 			{
-				PC.TakeDamage();
+				PC.TakeDamage(3.0f);
 				Destroy(gameObject);
 			}
 		}

@@ -10,6 +10,9 @@ public class PlayerController : NetworkOwnership
 	private float h = 0f;
 	private float v = 0f;
 
+	public float hp = 10.0f;
+	public int defense = 1;
+
 	public float speed = 10.0f;
 	public float rotationSpeedMult = 100.0f;
 	private Animator animComp;
@@ -172,11 +175,18 @@ public class PlayerController : NetworkOwnership
 		// @todo: 프로젝타일 수정
 		Projectile proj = Instantiate(dagger, attackPos.position, attackPos.rotation);
 		proj.owner = gameObject;
-		proj.speed = 3.0f;
+		proj.speed = 5.0f;
 	}
 
 
-	public void TakeDamage()
+	public void TakeDamage(float damage)
+	{
+		// 서버에 요청, 서버가 함수 실행하여 클라이언트에 뿌리기
+		NetworkConnectionManager.instance.SendRPCToServer(ownerPlayer.id, "RPCTakeDamageServer", damage, defense);
+	}
+
+
+	public void RPCTakeDamageAll(float damage)
 	{
 		animComp.SetTrigger("Damaged");
 	}
