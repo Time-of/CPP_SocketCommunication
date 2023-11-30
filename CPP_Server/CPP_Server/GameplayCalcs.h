@@ -1,8 +1,10 @@
 #pragma once
 
 #include "../CVSP.h"
+#include <any>
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -27,24 +29,27 @@ public:
 
 	static GameplayCalcs& GetInstance();
 
-	const CalcResult InvokeFunction(const std::string& functionName, const std::vector<void*>& args);
+	CalcResult InvokeFunction(const std::string& functionName, const std::vector<std::shared_ptr<std::any>>& args);
 
 
 private:
-	const CalcResult RPCTakeDamageServer(const std::vector<void*>& args);
+	CalcResult RPCTakeDamageServer(const std::vector<std::shared_ptr<std::any>>& args);
 
 
-	std::map<std::string, std::function<const CalcResult&(const std::vector<void*>&)>> functionMap;
+	std::map<std::string, std::function<CalcResult(const std::vector<std::shared_ptr<std::any>>&)>> functionMap;
 };
 
 
 
 struct CalcResult
 {
-	// 결과 벡터
-	std::vector<void*> result;
-	// 전파할 함수 이름
-	std::string broadcastFunctionName;
+	// 성공 여부?
+	bool bSuccessed;
+
 	// 결과 타입 정보
-	std::vector<byte> typeInfos;
+	std::vector<::byte> typeInfos;
+	// 결과 벡터
+	std::vector<std::shared_ptr<std::any>> result;
+	// 전파할 함수 이름
+	char broadcastFunctionName[20];
 };

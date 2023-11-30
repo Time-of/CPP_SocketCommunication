@@ -1,12 +1,11 @@
 #include "Serializer.h"
 
-//#include <cassert>
 #include <iostream>
 #include <string>
-#include <codecvt>
+#include <Windows.h>
 
 
-bool Serializer::Serialize(const std::vector<void*>& objects, std::vector<byte>& objectTypesNotOut, std::vector<byte>& outSerializedBytes)
+bool Serializer::Serialize(const std::vector<std::shared_ptr<std::any>>& objects, std::vector<::byte>& objectTypesNotOut, std::vector<::byte>& outSerializedBytes)
 {
 	if (objects.empty())
 	{
@@ -27,19 +26,19 @@ bool Serializer::Serialize(const std::vector<void*>& objects, std::vector<byte>&
 	union
 	{
 		uint16 input;
-		byte output[2];
+		::byte output[2];
 	} serializeUint16;
 
 	union
 	{
 		int input;
-		byte output[4];
+		::byte output[4];
 	} serializeInt;
 
 	union
 	{
 		float input;
-		byte output[4];
+		::byte output[4];
 	} serializeFloat;
 
 	const int size = objects.size();
@@ -50,21 +49,21 @@ bool Serializer::Serialize(const std::vector<void*>& objects, std::vector<byte>&
 		{
 			case RPCValueType::INT:
 			{
-				serializeInt.input = *(int*)objects[i];
+				serializeInt.input = *std::any_cast<int>(objects[i].get());
 				outSerializedBytes.insert(outSerializedBytes.end(), serializeInt.output, serializeInt.output + 4);
 				break;
 			}
 
 			case RPCValueType::FLOAT:
 			{
-				serializeFloat.input = *(float*)objects[i];
+				serializeFloat.input = *std::any_cast<float>(objects[i].get());
 				outSerializedBytes.insert(outSerializedBytes.end(), serializeFloat.output, serializeFloat.output + 4);
 				break;
 			}
 
 			case RPCValueType::STRING:
 			{
-				std::string str(*(std::string*)objects[i]);
+				std::string str(*std::any_cast<std::string>(objects[i].get()));
 				serializeUint16.input = static_cast<uint16>(str.length());
 				outSerializedBytes.insert(outSerializedBytes.end(), serializeUint16.output, serializeUint16.output + 2);
 				auto strBytes = StringToByte(str);
@@ -74,7 +73,7 @@ bool Serializer::Serialize(const std::vector<void*>& objects, std::vector<byte>&
 
 			case RPCValueType::VEC3:
 			{
-				Vector3 vector3 = *(Vector3*)objects[i];
+				Vector3 vector3 = *std::any_cast<Vector3>(objects[i].get());
 				serializeFloat.input = vector3.x;
 				outSerializedBytes.insert(outSerializedBytes.end(), serializeFloat.output, serializeFloat.output + 4);
 				serializeFloat.input = vector3.y;
@@ -86,7 +85,7 @@ bool Serializer::Serialize(const std::vector<void*>& objects, std::vector<byte>&
 
 			case RPCValueType::QUAT:
 			{
-				Quaternion quat = *(Quaternion*)objects[i];
+				Quaternion quat = *std::any_cast<Quaternion>(objects[i].get());
 				serializeFloat.input = quat.x;
 				outSerializedBytes.insert(outSerializedBytes.end(), serializeFloat.output, serializeFloat.output + 4);
 				serializeFloat.input = quat.y;
@@ -113,38 +112,55 @@ bool Serializer::Serialize(const std::vector<void*>& objects, std::vector<byte>&
 }
 
 
-std::vector<void*>& Serializer::Deserialize(byte bytesToDeserialize[], byte typeInfo[8])
+std::vector<std::shared_ptr<std::any>> Serializer::Deserialize(::byte bytesToDeserialize[], ::byte typeInfo[8])
 {
-	int size = sizeof(bytesToDeserialize) / sizeof(byte);
-	std::vector<byte> serializedObjects(bytesToDeserialize, bytesToDeserialize + size);
-
-	std::vector<void*> result;
-	result.reserve(8);
-	
+	int size = static_cast<int>(sizeof(bytesToDeserialize) / sizeof(bytesToDeserialize[0]));
+	std::vector<::byte> serializedObjects(bytesToDeserialize, bytesToDeserialize + size);
 	size = serializedObjects.size();
+
+	std::vector<std::shared_ptr<std::any>> result;
+
+	int validTypeSize = 0;
+	for (int i = 0; i < size; ++i)
+	{
+		if (typeInfo[i] > RPCValueType::UNDEFINED and typeInfo[i] <= RPCValueType::QUAT)
+		{
+			++validTypeSize;
+		}
+		else
+		{
+			break;
+		}
+	}
+	if (validTypeSize == 0)
+	{
+		std::cout << "역직렬화: 데이터가 유효하지 않음!\n";
+		return result;
+	}
+
+	result.reserve(validTypeSize);
+
 	
 	std::cout << "역직렬화 시작! byte size: " << size << "\n";
 
 	int typeIndex = 0;
-	for (int head = 0; head < size and typeIndex < 8;)
+	for (int head = 0; head < size and typeIndex < validTypeSize;)
 	{
-		std::cout << "head: " << head << ", typeIndex: " << typeIndex << "\n";
-		std::cout << "typeInfo[typeIndex]: " << typeInfo[typeIndex] << "\n";
+		//std::cout << "head: " << head << ", typeIndex: " << typeIndex << "\n";
+		//std::cout << "typeInfo[typeIndex]: " << static_cast<int>(typeInfo[typeIndex]) << "\n";
 
 		switch (typeInfo[typeIndex])
 		{
 			case RPCValueType::INT:
 			{
-				int num = ByteToInt(serializedObjects, head);
-				result.push_back(&num);
+				result.push_back(std::make_shared<std::any>(ByteToInt(serializedObjects, head)));
 				head += 4;
 				break;
 			}
 
 			case RPCValueType::FLOAT:
 			{
-				float num = ByteToFloat(serializedObjects, head);
-				result.push_back(&num);
+				result.push_back(std::make_shared<std::any>(ByteToFloat(serializedObjects, head)));
 				head += 4;
 				break;
 			}
@@ -153,24 +169,21 @@ std::vector<void*>& Serializer::Deserialize(byte bytesToDeserialize[], byte type
 			{
 				uint16 length = ByteToUint16(serializedObjects, head);
 				head += 2;
-				std::string str = ByteToString(serializedObjects, head, length);
-				result.push_back(&str);
+				result.push_back(std::make_shared<std::any>(ByteToString(serializedObjects, head, length)));
 				head += length;
 				break;
 			}
 
 			case RPCValueType::VEC3:
 			{
-				Vector3 vec3 = ByteToVector3(serializedObjects, head);
-				result.push_back(&vec3);
+				result.push_back(std::make_shared<std::any>(ByteToVector3(serializedObjects, head)));
 				head += 12;
 				break;
 			}
 
 			case RPCValueType::QUAT:
 			{
-				Quaternion quat = ByteToQuaternion(serializedObjects, head);
-				result.push_back(&quat);
+				result.push_back(std::make_shared<std::any>(ByteToQuaternion(serializedObjects, head)));
 				head += 16;
 				break;
 			}
@@ -178,7 +191,7 @@ std::vector<void*>& Serializer::Deserialize(byte bytesToDeserialize[], byte type
 			default:
 			{
 				std::cout << "역직렬화 실패: 역직렬화 중 UNDEFINED나 미정의 타입을 만남!\n";
-				std::vector<void*> tmp;
+				std::vector<std::shared_ptr<std::any>> tmp;
 				return tmp;
 			}
 
@@ -192,30 +205,32 @@ std::vector<void*>& Serializer::Deserialize(byte bytesToDeserialize[], byte type
 		++typeIndex;
 	}
 
+	std::cout << "역직렬화 종료!\n";
+
 	return result;
 }
 
 
-int Serializer::ByteToInt(const std::vector<byte>& bytes, int startIndex)
+int Serializer::ByteToInt(const std::vector<::byte>& bytes, int startIndex)
 {
 	return bytes[startIndex] | (bytes[startIndex + 1] << 8) | (bytes[startIndex + 2] << 16) | (bytes[startIndex + 3] << 24);
 }
 
 
-float Serializer::ByteToFloat(const std::vector<byte>& bytes, int startIndex)
+float Serializer::ByteToFloat(const std::vector<::byte>& bytes, int startIndex)
 {
 	int toInt = ByteToInt(bytes, startIndex);
 	return *(float*)&toInt;
 }
 
 
-uint16 Serializer::ByteToUint16(const std::vector<byte>& bytes, int startIndex)
+uint16 Serializer::ByteToUint16(const std::vector<::byte>& bytes, int startIndex)
 {
 	return static_cast<uint16>(bytes[startIndex] | (bytes[startIndex + 1] << 8));
 }
 
 
-Vector3 Serializer::ByteToVector3(const std::vector<byte>& bytes, int startIndex)
+Vector3 Serializer::ByteToVector3(const std::vector<::byte>& bytes, int startIndex)
 {
 	Vector3 vector3;
 	vector3.x = ByteToFloat(bytes, startIndex);
@@ -226,7 +241,7 @@ Vector3 Serializer::ByteToVector3(const std::vector<byte>& bytes, int startIndex
 }
 
 
-Quaternion Serializer::ByteToQuaternion(const std::vector<byte>& bytes, int startIndex)
+Quaternion Serializer::ByteToQuaternion(const std::vector<::byte>& bytes, int startIndex)
 {
 	Quaternion quat;
 	quat.x = ByteToFloat(bytes, startIndex);
@@ -238,21 +253,13 @@ Quaternion Serializer::ByteToQuaternion(const std::vector<byte>& bytes, int star
 }
 
 
-// 인터넷 코드
-std::vector<byte> Serializer::StringToByte(const std::string& str)
+std::vector<::byte> Serializer::StringToByte(const std::string& str)
 {
-	std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
-	std::u32string u32str = converter.from_bytes(str);
-
-	return std::vector<byte>(u32str.begin(), u32str.end());
+	return std::vector<::byte>(str.begin(), str.begin() + str.length());
 }
 
 
-// 인터넷 코드 가져와서 수정
-std::string Serializer::ByteToString(const std::vector<byte>& bytes, int startIndex, int length)
+std::string Serializer::ByteToString(const std::vector<::byte>& bytes, int startIndex, int length)
 {
-	std::u32string u32str(bytes.begin() + startIndex, bytes.begin() + startIndex + length);
-	std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
-
-	return converter.to_bytes(u32str);
+	return std::string(bytes.begin() + startIndex, bytes.begin() + startIndex + length);
 }

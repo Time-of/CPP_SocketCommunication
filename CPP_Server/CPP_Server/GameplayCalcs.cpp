@@ -1,7 +1,7 @@
 #include "GameplayCalcs.h"
 // include할 때 "CPP_Server/GameplayCalcs.h" 로 해야 함
 
-
+#include <iostream>
 #include <cassert>
 
 
@@ -22,32 +22,38 @@ GameplayCalcs& GameplayCalcs::GetInstance()
 }
 
 
-const CalcResult GameplayCalcs::InvokeFunction(const std::string& functionName, const std::vector<void*>& args)
+CalcResult GameplayCalcs::InvokeFunction(const std::string& functionName, const std::vector<std::shared_ptr<std::any>>& args)
 {
-	CalcResult result = functionMap[functionName](args);
+	auto found = functionMap.find(functionName);
+	if (found == functionMap.end())
+	{
+		CalcResult failed;
+		failed.bSuccessed = false;
+		
+		std::cout << "InvokeFunction 실패! 함수명: " << functionName << "\n";
+		return failed;
+	}
+
+	CalcResult result = found->second(args);
 
 	return result;
 }
 
 
-const CalcResult GameplayCalcs::RPCTakeDamageServer(const std::vector<void*>& args)
+CalcResult GameplayCalcs::RPCTakeDamageServer(const std::vector<std::shared_ptr<std::any>>& args)
 {
-	// 각 형태에 맞는 주소로 형변환 후 값 가져오기...
 	// 역직렬화가 되었다고 가정하고 수행
 
-	assert(sizeof(args[0]) == sizeof(float));
-	assert(sizeof(args[1]) == sizeof(int));
+	//float damage = *(float*)args[0];
+	//int defense = *(int*)args[1];
 
-	float damage = *(float*)args[0];
-	int defense = *(int*)args[1];
-
-	//memcpy(&damage, args[0], sizeof(float));
-	//memcpy(&defense, args[1], sizeof(int));
+	float damage = *std::any_cast<float>(args[0].get());
+	int defense = *std::any_cast<int>(args[1].get());
 
 	float result = damage - defense;
 	CalcResult returnValue;
-	returnValue.result.push_back(&result);
-	returnValue.broadcastFunctionName = std::move(std::string("RPCTakeDamageAll"));
+	returnValue.result.push_back(std::make_shared<std::any>(result));
+	strcpy_s(returnValue.broadcastFunctionName, "RPCTakeDamageAll");
 	returnValue.typeInfos.push_back(RPCValueType::FLOAT);
 
 	return returnValue;

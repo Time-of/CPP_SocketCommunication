@@ -403,8 +403,8 @@ public class SocketConnector : MonoBehaviour
 
 		for (int head = 0; head < size && typeIndex < validTypeSize;)
 		{
-			Debug.Log("시작! head: " + head + ", typeIndex: " + typeIndex + ", resultIndex: " + resultIndex);
-			Debug.Log("typeBytes[typeIndex]: " + typeBytes[typeIndex]);
+			//Debug.Log("시작! head: " + head + ", typeIndex: " + typeIndex + ", resultIndex: " + resultIndex);
+			//Debug.Log("typeBytes[typeIndex]: " + typeBytes[typeIndex]);
 
 			switch (typeBytes[typeIndex])
 			{
@@ -523,7 +523,7 @@ public class SocketConnector : MonoBehaviour
 						RPCInfo info = new();
 						info = (RPCInfo)ByteToStructure(payloadByte, info.GetType());
 
-						Debug.Log("<color.green>RPC</color> [" + info.functionName + "] <color.green>성공적으로 응답 받음!</color>");
+						Debug.Log("<color=green><b>RPC</b></color> [" + info.functionName + "] <color=green><b>성공적으로 응답 받음!</b></color>");
 
 						NetworkConnectionManager.instance.rpcQueue.Enqueue(info);
 					}
@@ -549,7 +549,7 @@ public class SocketConnector : MonoBehaviour
 							rpcParamTypes = null
 						};
 
-						Debug.Log("<color.green>RPC</color> [" + noParamInfo.functionName + "] <color.green>성공적으로 응답 받음!</color>");
+						Debug.Log("<color=green><b>NOPARAM RPC</b></color> [" + noParamInfo.functionName + "] <color=green><b>성공적으로 응답 받음!</b></color>");
 
 						NetworkConnectionManager.instance.rpcQueue.Enqueue(noParamInfo);
 					}

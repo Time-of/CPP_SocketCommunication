@@ -87,6 +87,8 @@ public class PlayerController : NetworkOwnership
 
 	private void Update()
 	{
+		if (hp <= 0.0f) return;
+
 		if (bIsMine)
 		{
 			h = Input.GetAxis("Horizontal");
@@ -162,9 +164,10 @@ public class PlayerController : NetworkOwnership
 
 	private void PerformAttack()
 	{
+		if (hp <= 0.0f) return;
+
 		//photonView.RPC("RPCPerformAttackAll", RpcTarget.All);
 		NetworkConnectionManager.instance.SendRPCToAll(ownerPlayer.id, "RPCPerformAttackAll");
-		NetworkConnectionManager.instance.SendRPCToServer(ownerPlayer.id, "RPCTakeDamageServer", 2.0f, defense);
 	}
 
 
@@ -176,12 +179,14 @@ public class PlayerController : NetworkOwnership
 		// @todo: 프로젝타일 수정
 		Projectile proj = Instantiate(dagger, attackPos.position, attackPos.rotation);
 		proj.owner = gameObject;
-		proj.speed = 5.0f;
+		proj.speed = 6.0f;
 	}
 
 
 	public void TakeDamage(float damage)
 	{
+		if (!bIsMine) return;
+	
 		// 서버에 요청, 서버가 함수 실행하여 클라이언트에 뿌리기
 		NetworkConnectionManager.instance.SendRPCToServer(ownerPlayer.id, "RPCTakeDamageServer", damage, defense);
 	}
@@ -198,6 +203,7 @@ public class PlayerController : NetworkOwnership
 		if (hp <= 0.0f)
 		{
 			animComp.SetBool("Dead", true);
+			animComp.SetTrigger("Die");
 		}
 	}
 }

@@ -195,6 +195,10 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 				// 모든 클라이언트에게 뿌릴 RPC
 				case CVSP_RPCTARGET_ALL:
 				{
+					RPCInfo info;
+					ZeroMemory(&info, sizeof(RPCInfo));
+					memcpy(&info, extraPacket, sizeof(RPCInfo));
+
 					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
 					{
 						if (!infoIter->bIsConnected) continue;
@@ -202,43 +206,36 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(RPCInfo)));
 						if (sendResult < 0) cout << "클라이언트 [" << infoIter->id << "] 에게 RPC 전송 실패!\n";
 					}
-					cout << "RPC 요청 모두에게 전송 완료!\n";
+					cout << "RPC 요청 [" << info.functionName << "] 모두에게 전송 완료!\n";
 					break;
 				}
 
 				// 서버에서 실행할 RPC
 				case CVSP_RPCTARGET_SERVER:
 				{
-					cout << "서버로 보내진 RPC 수신 완료!\n";
-					
 					RPCInfo info;
 					ZeroMemory(&info, sizeof(RPCInfo));
 					memcpy(&info, extraPacket, sizeof(RPCInfo));
 
-					// 공유 자원을 사용하는 것은 아니라서, mutex를 할 필요는 없는 듯
-					//std::lock_guard<std::mutex> lockCalc(mt);
+					cout << "서버로 보내진 RPC 요청 [" << info.functionName << "] 수신 완료!\n";
 
-					
+
 					// 역직렬화
-					vector<void*> args = std::move(Serializer::Deserialize(info.rpcParams, info.rpcParamTypes));
+					std::vector<std::shared_ptr<std::any>> args { Serializer::Deserialize(info.rpcParams, info.rpcParamTypes) };
 					
 
 					// 계산
 					CalcResult calcResult = GameplayCalcs::GetInstance().InvokeFunction(info.functionName, args);
-					if (calcResult.broadcastFunctionName.length() >= 20)
-					{
-						cout << "서버 함수 " << info.functionName << "의 broadcastFunctionName이 최대 길이 제한을 초과하여 RPC 전송 취소!\n";
-						break;
-					}
+					if (!calcResult.bSuccessed) break;
 					
 					
 					RPCInfo resultInfo;
 					ZeroMemory(&resultInfo, sizeof(RPCInfo));
 					resultInfo.ownerId = info.ownerId;
-					strcpy_s(resultInfo.functionName, calcResult.broadcastFunctionName.length(), calcResult.broadcastFunctionName.c_str());
+					strcpy_s(resultInfo.functionName, calcResult.broadcastFunctionName);
 					
 					// 직렬화
-					vector<byte> outSerializedBytes;
+					vector<::byte> outSerializedBytes;
 					bool serializeResult = Serializer::Serialize(calcResult.result, calcResult.typeInfos, outSerializedBytes);
 					if (!serializeResult) cout << "직렬화 실패!\n";
 					std::copy(outSerializedBytes.begin(), outSerializedBytes.end(), resultInfo.rpcParams);
@@ -254,7 +251,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_RES, CVSP_SUCCESS, &resultInfo, static_cast<uint16>(sizeof(RPCInfo)));
 						if (sendResult < 0) cout << "클라이언트 [" << infoIter->id << "] 에게 RPC 전송 실패!\n";
 					}
-					cout << "서버에서 계산한 후 RPC 모두에게 전송 완료!\n";
+					cout << "서버에서 계산한 후 RPC [" << resultInfo.functionName << "] 모두에게 전송 완료!\n";
 
 					break;
 				}
@@ -273,11 +270,14 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 			// RPC 요청 (파라미터 미보유)
 			case CVSP_RPC_NOPARAM_REQ:
 			{
-
 				switch (option)
 				{
 				case CVSP_RPCTARGET_ALL:
 				{
+					RPCInfo info;
+					ZeroMemory(&info, sizeof(RPCInfo));
+					memcpy(&info, extraPacket, sizeof(RPCInfo));
+
 					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
 					{
 						if (!infoIter->bIsConnected) continue;
@@ -285,9 +285,10 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_NOPARAM_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(RPCInfoNoParam)));
 						if (sendResult < 0) cout << "클라이언트 [" << infoIter->id << "] 에게 NOPARAM RPC 전송 실패!\n";
 					}
-					cout << "NOPARAM RPC 요청 모두에게 전송 완료!\n";
+					cout << "NOPARAM RPC 요청 [" << info.functionName << "] 모두에게 전송 완료!\n";
 					break;
 				}
+
 				default:
 				{
 					cout << "NOPARAM RPC 요청의 option이 유효하지 않음!\n";

@@ -104,8 +104,8 @@ struct alignas(4) TransformInfo
 struct RPCInfo
 {
 	char functionName[20];
-	byte rpcParams[96];
-	byte rpcParamTypes[8];
+	::byte rpcParams[96];
+	::byte rpcParamTypes[8];
 	int ownerId;
 };
 
@@ -123,12 +123,12 @@ struct PlayerInfo
 
 struct RPCValueType
 {
-	static const byte UNDEFINED = 0x00;
-	static const byte INT = 0x01;
-	static const byte FLOAT = 0x02;
-	static const byte STRING = 0x03;
-	static const byte VEC3 = 0x04;
-	static const byte QUAT = 0x05;
+	static const ::byte UNDEFINED = (::byte)0x00;
+	static const ::byte INT = (::byte)0x01;
+	static const ::byte FLOAT = (::byte)0x02;
+	static const ::byte STRING = (::byte)0x03;
+	static const ::byte VEC3 = (::byte)0x04;
+	static const ::byte QUAT = (::byte)0x05;
 };
 
 int SendCVSP(uint32 socketfd, uint8 cmd, uint8 option, void* payload, uint16 len);
