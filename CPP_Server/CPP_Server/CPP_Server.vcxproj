@@ -104,6 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,10 +131,14 @@
     <ClCompile Include="..\CVSP.cpp" />
     <ClCompile Include="..\GameServer.cpp" />
     <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="GameplayCalcs.cpp" />
+    <ClCompile Include="Serializer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\CVSP.h" />
     <ClInclude Include="..\GameServer.h" />
+    <ClInclude Include="GameplayCalcs.h" />
+    <ClInclude Include="Serializer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -12,29 +12,28 @@ public class GameManager : MonoBehaviour
 	}
 
 
+	private void Start()
+	{
+		//NetworkConnectionManager.instance.OnJoinSuccessedDelegate += SpawnPlayer;
+	}
+
 
 	void OnSceneLoaded(Scene loadedScene, LoadSceneMode mode)
 	{
 		//if (!PhotonNetwork.IsConnected) return;
 
-		SpawnPlayer();
 	}
-
-
-
-	public void SpawnPlayer()
-	{
-		StartCoroutine(SpawnPlayerCoroutine());
-	}
-
 
 
 	private IEnumerator SpawnPlayerCoroutine()
 	{
+		//Debug.Log("게임 매니저에서 플레이어 스폰 시작");
 		yield return new WaitForSeconds(1.0f);
 
 		//PhotonNetwork.Instantiate("Player", Vector3.zero, Quaternion.identity);
 
-		Instantiate(Resources.Load<GameObject>("Player"), Vector3.zero, Quaternion.identity);
+		//var result = NetworkOwnership.Instantiate("Player", Vector3.zero, Quaternion.identity);
+		
+		//Debug.Log("플레이어 스폰 결과: " + (result != null));
 	}
 }

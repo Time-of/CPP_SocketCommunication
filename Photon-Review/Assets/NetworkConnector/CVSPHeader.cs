@@ -19,7 +19,93 @@ namespace CVSP
 	{
 		public byte cmd;
 		public byte option;
-		public short packetLength;
+		public ushort packetLength;
+	}
+
+
+	/// <summary>
+	/// 64바이트짜리, 오브젝트 스폰 정보.
+	/// </summary>
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct ObjectSpawnInfo
+	{
+		[MarshalAs(UnmanagedType.R4)] public float posX;
+		[MarshalAs(UnmanagedType.R4)] public float posY;
+		[MarshalAs(UnmanagedType.R4)] public float posZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatX;
+		[MarshalAs(UnmanagedType.R4)] public float quatY;
+		[MarshalAs(UnmanagedType.R4)] public float quatZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatW;
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
+
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+		public string objectName;
+	}
+
+
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct TransformInfo
+	{
+		[MarshalAs(UnmanagedType.R4)] public float posX;
+		[MarshalAs(UnmanagedType.R4)] public float posY;
+		[MarshalAs(UnmanagedType.R4)] public float posZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatX;
+		[MarshalAs(UnmanagedType.R4)] public float quatY;
+		[MarshalAs(UnmanagedType.R4)] public float quatZ;
+		[MarshalAs(UnmanagedType.R4)] public float quatW;
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
+	};
+
+
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct RPCInfo
+	{
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+		public string functionName;
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 96, ArraySubType = UnmanagedType.U1)]
+		public byte[] rpcParams;
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 8, ArraySubType = UnmanagedType.U1)]
+		public byte[] rpcParamTypes;
+
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
+	}
+
+
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct RPCInfoNoParam
+	{
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+		public string functionName;
+
+		[MarshalAs(UnmanagedType.I4)] public int ownerId;
+	}
+
+
+	[System.Serializable]
+	[StructLayout(LayoutKind.Sequential)]
+	public unsafe struct PlayerInfo
+	{
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
+		public string nickname;
+
+		[MarshalAs(UnmanagedType.I4)] public int id;
+	}
+
+
+	public static class RPCValueType
+	{
+		public const byte UNDEFINED = 0x00;
+		public const byte INT = 0x01;
+		public const byte FLOAT = 0x02;
+		public const byte STRING = 0x03;
+		public const byte VEC3 = 0x04;
+		public const byte QUAT = 0x05;
 	}
 
 
@@ -38,10 +124,19 @@ namespace CVSP
 		public static byte CVSP_OPERATIONREQ = (byte)0x05;
 		public static byte CVSP_MONITORINGMSG = (byte)0x06;
 		public static byte CVSP_LEAVEREQ = (byte)0x07;
+		public static byte CVSP_SPAWN_OBJECT_REQ = (byte)0x08;
+		public static byte CVSP_SPAWN_OBJECT_RES = (byte)0x09;
+		public static byte CVSP_RPC_REQ = (byte)0x10;
+		public static byte CVSP_RPC_NOPARAM_REQ = (byte)0x11;
+		public static byte CVSP_RPC_RES = (byte)0x12;
+		public static byte CVSP_RPC_NOPARAM_RES = (byte)0x13;
 
 		// 프로토콜 옵션
 		public static byte CVSP_SUCCESS = (byte)0x01;
 		public static byte CVSP_FAIL = (byte)0x02;
+		public static byte CVSP_NEW_USER = (byte)0x03;
+		public static byte CVSP_RPCTARGET_ALL = (byte)0x04;
+		public static byte CVSP_RPCTARGET_SERVER = (byte)0x05;
 
 		public static int CVSP_SIZE = 4;
 		public static int CVSP_BUFFERSIZE = 4096;

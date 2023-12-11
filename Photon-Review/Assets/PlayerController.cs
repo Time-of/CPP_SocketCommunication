@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 //using Photon.Pun;
 using TMPro;
+using System.IO;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkOwnership
 {
 	private float h = 0f;
 	private float v = 0f;
+
+	public float hp = 10.0f;
+	public int defense = 1;
 
 	public float speed = 10.0f;
 	public float rotationSpeedMult = 100.0f;
@@ -32,7 +36,6 @@ public class PlayerController : MonoBehaviour
 
 
 	[Header("<네트워킹>")]
-
 	[SerializeField]
 	protected float NetworkingRotationInterpSpeed = 25.0f;
 
@@ -46,24 +49,36 @@ public class PlayerController : MonoBehaviour
 	private void Awake()
 	{
 		animComp = GetComponent<Animator>();
-
-		// @todo: 내꺼에서만 작동하게 만들기
-		//if (photonView.IsMine)
-		{
-			Camera.main.GetComponent<FollowingCamera>().InitializeFollowCamera(this);
-		}
 	}
 
 
 	private void Start()
 	{
+		if (bIsMine)
+		{
+			Camera.main.GetComponent<FollowingCamera>().InitializeFollowCamera(this);
+		}
+
+		NetworkConnectionManager.instance.playerCharacterMap.Add(ownerPlayer.id, this);
+		SetMyNickname(ownerPlayer.nickname);
+
+		// SetMyNickname RPC
+		//NetworkConnectionManager.instance.SendRPCToAll(owner.id, "SetMyNickname", NetworkConnectionManager.instance.localNickname);
+
 		//if (photonView.IsMine)
-			//photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
+		//photonView.RPC("SetMyNickname", RpcTarget.AllBuffered, NetworkConnectionManager.instance.localNickname);
+	}
+
+
+	public void UpdateNetworkingTransform(Vector3 pos, Quaternion rot)
+	{
+		NetworkingPosition = pos;
+		NetworkingRotation = rot;
 	}
 
 
 	//[PunRPC]
-	private void SetMyNickname(string localNickname)
+	public void SetMyNickname(string localNickname)
 	{
 		nickname = localNickname;
 		nicknameTextHUD.text = nickname;
@@ -72,14 +87,15 @@ public class PlayerController : MonoBehaviour
 
 	private void Update()
 	{
-		//if (photonView.IsMine)
-		if (true)
+		if (hp <= 0.0f) return;
+
+		if (bIsMine)
 		{
 			h = Input.GetAxis("Horizontal");
 			v = Input.GetAxis("Vertical");
 			aimYaw += Input.GetAxis("Mouse X");
 			aimPitch += -Input.GetAxis("Mouse Y");
-			aimPitch = Mathf.Clamp(aimPitch, -60.0f, 60.0f);
+			aimPitch = Mathf.Clamp(aimPitch, -5.0f, 45.0f);
 
 			velocity = new Vector3(h, 0.0f, v).normalized * Time.deltaTime * speed;
 			transform.Translate(velocity);
@@ -90,10 +106,12 @@ public class PlayerController : MonoBehaviour
 				);
 
 			if (Input.GetMouseButtonDown(0)) PerformAttack();
+
+			NetworkConnectionManager.instance.SendTransformExceptScale(transform);
 		}
 		else
 		{
-			UpdateNetworkingTransform();
+			PerformUpdateNotMineTransform();
 		}
 
 		animComp.SetFloat("Speed", velocity.magnitude);
@@ -129,24 +147,27 @@ public class PlayerController : MonoBehaviour
 	*/
 
 
-	void UpdateNetworkingTransform()
+	void PerformUpdateNotMineTransform()
 	{
-		/*
-		if (!photonView.IsMine)
-		{
-			transform.position = Vector3.MoveTowards(transform.position, NetworkingPosition,
-				NetworkingDistance * (1.0f / PhotonNetwork.SerializationRate));
+		//transform.position = Vector3.MoveTowards(transform.position, NetworkingPosition,
+		//	NetworkingDistance * (1.0f / PhotonNetwork.SerializationRate));
+		Vector3 oldPos = transform.position;
 
-			transform.rotation = Quaternion.Slerp(transform.rotation, NetworkingRotation,
-				NetworkingRotationInterpSpeed * Time.fixedDeltaTime);
-		}
-		*/
+		transform.position = Vector3.Lerp(transform.position, NetworkingPosition,
+			20.0f * Time.deltaTime);
+		transform.rotation = Quaternion.Slerp(transform.rotation, NetworkingRotation,
+			NetworkingRotationInterpSpeed * Time.fixedDeltaTime);
+
+		velocity = transform.position - oldPos;
 	}
 
 
 	private void PerformAttack()
 	{
+		if (hp <= 0.0f) return;
+
 		//photonView.RPC("RPCPerformAttackAll", RpcTarget.All);
+		NetworkConnectionManager.instance.SendRPCToAll(ownerPlayer.id, "RPCPerformAttackAll");
 	}
 
 
@@ -158,12 +179,31 @@ public class PlayerController : MonoBehaviour
 		// @todo: 프로젝타일 수정
 		Projectile proj = Instantiate(dagger, attackPos.position, attackPos.rotation);
 		proj.owner = gameObject;
-		proj.speed = 3.0f;
+		proj.speed = 6.0f;
 	}
 
 
-	public void TakeDamage()
+	public void TakeDamage(float damage)
 	{
+		if (!bIsMine) return;
+	
+		// 서버에 요청, 서버가 함수 실행하여 클라이언트에 뿌리기
+		NetworkConnectionManager.instance.SendRPCToServer(ownerPlayer.id, "RPCTakeDamageServer", damage, defense);
+	}
+
+
+	public void RPCTakeDamageAll(float damage)
+	{
+		if (hp <= 0.0f) return;
+
 		animComp.SetTrigger("Damaged");
+		Debug.Log("피해 입음! 피해량: " + damage);
+		hp -= damage;
+
+		if (hp <= 0.0f)
+		{
+			animComp.SetBool("Dead", true);
+			animComp.SetTrigger("Die");
+		}
 	}
 }

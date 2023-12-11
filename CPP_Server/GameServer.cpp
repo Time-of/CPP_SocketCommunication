@@ -1,11 +1,13 @@
 #include "GameServer.h"
+#include "CPP_Server/GameplayCalcs.h"
+#include "CPP_Server/Serializer.h"
 
 #include <algorithm>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <mmsystem.h>
-#include <thread>
+#include <mutex>
 
 #include "CVSP.h"
 using namespace std;
@@ -54,6 +56,9 @@ GameServer::~GameServer()
 void GameServer::Listen(int port)
 {
 	portNum = port;
+
+	// 싱글턴 미리 초기화 수행
+	GameplayCalcs::GetInstance();
 
 	thread listenThread(&GameServer::ListenThread, this);
 	listenThread.join();
@@ -133,6 +138,8 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 
 			switch (cmd)
 			{
+
+			// 채팅 요청
 			case CVSP_CHATTINGREQ:
 			{
 				//messageBuffer[recvLen] = '\0';
@@ -161,6 +168,204 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 				break;
 			}
 
+
+			// 이동 정보 요청 (TransformInfo)
+			case CVSP_OPERATIONREQ:
+			{
+				// 본인 제외 다른 클라이언트 모두에게 뿌리기
+				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+				{
+					if (!infoIter->bIsConnected) continue;
+					int clientId = 100 - (infoIter - clientArray.begin() + 1);
+					if (clientId == id) continue;
+
+					int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_MONITORINGMSG, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(TransformInfo)));
+					//cout << "TransformInfo를 " << id << " 에게서 " << clientId << " 에게 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패!\n");
+				}
+				break;
+			}
+
+
+			// RPC 요청 (파라미터 보유)
+			case CVSP_RPC_REQ:
+			{
+				switch (option)
+				{
+
+				// 모든 클라이언트에게 뿌릴 RPC
+				case CVSP_RPCTARGET_ALL:
+				{
+					RPCInfo info;
+					ZeroMemory(&info, sizeof(RPCInfo));
+					memcpy(&info, extraPacket, sizeof(RPCInfo));
+
+					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+					{
+						if (!infoIter->bIsConnected) continue;
+
+						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(RPCInfo)));
+						if (sendResult < 0) cout << "클라이언트 [" << infoIter->id << "] 에게 RPC 전송 실패!\n";
+					}
+					cout << "RPC 요청 [" << info.functionName << "] 모두에게 전송 완료!\n";
+					break;
+				}
+
+				// 서버에서 실행할 RPC
+				case CVSP_RPCTARGET_SERVER:
+				{
+					RPCInfo info;
+					ZeroMemory(&info, sizeof(RPCInfo));
+					memcpy(&info, extraPacket, sizeof(RPCInfo));
+
+					cout << "서버로 보내진 RPC 요청 [" << info.functionName << "] 수신 완료!\n";
+
+
+					// 역직렬화
+					std::vector<std::shared_ptr<std::any>> args { Serializer::Deserialize(info.rpcParams, info.rpcParamTypes) };
+					
+
+					// 계산
+					CalcResult calcResult = GameplayCalcs::GetInstance().InvokeFunction(info.functionName, args);
+					if (!calcResult.bSuccessed) break;
+					
+					
+					RPCInfo resultInfo;
+					ZeroMemory(&resultInfo, sizeof(RPCInfo));
+					resultInfo.ownerId = info.ownerId;
+					strcpy_s(resultInfo.functionName, calcResult.broadcastFunctionName);
+					
+					// 직렬화
+					vector<::byte> outSerializedBytes;
+					bool serializeResult = Serializer::Serialize(calcResult.result, calcResult.typeInfos, outSerializedBytes);
+					if (!serializeResult) cout << "직렬화 실패!\n";
+					std::copy(outSerializedBytes.begin(), outSerializedBytes.end(), resultInfo.rpcParams);
+					std::copy(calcResult.typeInfos.begin(), calcResult.typeInfos.end(), resultInfo.rpcParamTypes);
+
+
+					// 결과 전송
+					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+					{
+						if (!infoIter->bIsConnected) continue;
+
+						// 결과 RPCInfo 전파
+						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_RES, CVSP_SUCCESS, &resultInfo, static_cast<uint16>(sizeof(RPCInfo)));
+						if (sendResult < 0) cout << "클라이언트 [" << infoIter->id << "] 에게 RPC 전송 실패!\n";
+					}
+					cout << "서버에서 계산한 후 RPC [" << resultInfo.functionName << "] 모두에게 전송 완료!\n";
+
+					break;
+				}
+
+				default:
+				{
+					cout << "RPC 요청의 option이 유효하지 않음!\n";
+					break;
+				}
+
+				}
+				break;
+			}
+
+
+			// RPC 요청 (파라미터 미보유)
+			case CVSP_RPC_NOPARAM_REQ:
+			{
+				switch (option)
+				{
+				case CVSP_RPCTARGET_ALL:
+				{
+					RPCInfo info;
+					ZeroMemory(&info, sizeof(RPCInfo));
+					memcpy(&info, extraPacket, sizeof(RPCInfo));
+
+					for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+					{
+						if (!infoIter->bIsConnected) continue;
+
+						int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_RPC_NOPARAM_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(RPCInfoNoParam)));
+						if (sendResult < 0) cout << "클라이언트 [" << infoIter->id << "] 에게 NOPARAM RPC 전송 실패!\n";
+					}
+					cout << "NOPARAM RPC 요청 [" << info.functionName << "] 모두에게 전송 완료!\n";
+					break;
+				}
+
+				default:
+				{
+					cout << "NOPARAM RPC 요청의 option이 유효하지 않음!\n";
+					break;
+				}
+				}
+
+				break;
+			}
+
+
+			// Join 요청
+			case CVSP_JOINREQ:
+			{
+				// 클라이언트에서는 닉네임만 보냄, id는 서버가 할당
+				char nickname[20];
+				strcpy_s(nickname, 19, extraPacket);
+
+				iter->id = id;
+				iter->nickname = nickname;
+
+				cout << "클라이언트 " << id << "에서 Join 요청! 닉네임: " << iter->nickname << "\n";
+				cout << "닉네임 길이: " << iter->nickname.length() << "\n";
+
+				PlayerInfo myInfo;
+				myInfo.id = id;
+				strcpy_s(myInfo.nickname, 19, nickname);
+
+				// 요청자 본인에게 id 전송
+				if (SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_SUCCESS, (int*)&id, static_cast<uint16>(sizeof(int))) < 0)
+				{
+					cout << "클라이언트 " << id << "에서 Join 요청 응답하기 위해 Send하는 데 오류 발생!\n";
+				}
+
+				
+				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+				{
+					if (!infoIter->bIsConnected or infoIter->id == id) continue;
+					//int clientId = 100 - (infoIter - clientArray.begin() + 1);
+
+					PlayerInfo info;
+					info.id = infoIter->id;
+					strcpy_s(info.nickname, 19, infoIter->nickname.c_str());
+
+					// 방금 접속한 사람에게, 기존 접속자의 정보(PlayerInfo)를 알려주기
+					int sendResult = SendCVSP((uint32)iter->socket, CVSP_JOINRES, CVSP_NEW_USER, &info, static_cast<uint16>(sizeof(PlayerInfo)));
+					cout << "클라이언트 [" << iter->id << "] " << iter->nickname << "에게 [" << infoIter->id << "] " << infoIter->nickname << "의 Join 정보 전송 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
+
+					// 방급 접속한 유저 정보를 기존 유저들에게 전송하기
+					sendResult = SendCVSP((uint32)infoIter->socket, CVSP_JOINRES, CVSP_NEW_USER, &myInfo, static_cast<uint16>(sizeof(PlayerInfo)));
+					cout << "클라이언트 [" << infoIter->id << "] 에게 [" << iter->id << "] 가 새로 Join했음을 알리는 데 " << ((sendResult >= 0) ? "성공!\n" : "실패...\n");
+				}
+				break;
+			}
+
+
+			// 오브젝트 스폰 요청
+			case CVSP_SPAWN_OBJECT_REQ:
+			{
+				cout << "클라이언트 " << id << "에서 Object Spawn 요청!\n";
+
+				// **요청자를 제외하고** 클라이언트에 응답 뿌리기
+				// 요청자는 본인이 즉석해서 로컬에 생성하는 방식. (클라이언트 쪽)
+				for (auto infoIter = clientArray.begin(); infoIter != clientArray.end(); ++infoIter)
+				{
+					if (!infoIter->bIsConnected) continue;
+					int clientId = 100 - (infoIter - clientArray.begin() + 1);
+					if (clientId == id) continue;
+
+					int sendResult = SendCVSP((uint32)infoIter->socket, CVSP_SPAWN_OBJECT_RES, CVSP_SUCCESS, extraPacket, static_cast<uint16>(sizeof(ObjectSpawnInfo)));
+					cout << "클라이언트 " << clientId << "에게 Spawn 요청 응답" << ((sendResult >= 0) ? " 성공!\n" : "하기 위해 Send하는 데 오류 발생!\n");
+				}
+				break;
+			}
+
+
+			// 종료 요청
 			case CVSP_LEAVEREQ:
 			{
 				cout << "소켓 연결을 종료합니다!\n";
@@ -174,7 +379,7 @@ UINT __stdcall GameServer::ControlThread(LPVOID p)
 	iter->bIsConnected = false;
 	closesocket(connectSocket);
 	server->clientPools.push(iter);
-	cout << "클라이언트 " << id << " 연결 종료됨!!\n";
+	cout << "클라이언트 " << id << " 연결 종료됨!!: " << GetLastError() << "\n";
 
 	return 0;
 }
@@ -205,7 +410,7 @@ UINT __stdcall GameServer::ListenThread(LPVOID p)
 	}
 
 
-	if (bind(serverSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
+	if (::bind(serverSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR)
 	{
 		cout << "바인드 오류\n";
 		closesocket(serverSocket);
